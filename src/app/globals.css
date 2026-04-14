@@ -53,6 +53,10 @@
   --pr-charcoal-rgb: 30 35 38;
   --pr-charcoal-dark-rgb: 20 23 26;
 
+  /* Dusky purple (CTA color from storybook) */
+  --pr-dusky-purple: #4B4D72;
+  --pr-dusky-purple-hover: #3D3F5E;
+
   /* Semantic status */
   --success: 160 84% 39%;
   --success-foreground: 0 0% 98%;
@@ -118,7 +122,7 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /* ============================================
@@ -246,8 +250,9 @@ h1, h2, h3, h4, h5, h6 {
    * ============================================ */
 
   .glass-sidebar {
-    @apply backdrop-blur-sm border-r border-lime-200/60;
-    background-color: #ECFCCB;
+    @apply border-r;
+    background-color: #4B4D72;
+    border-color: rgba(255, 255, 255, 0.1);
   }
 
   .header-floating-wrapper {
@@ -255,22 +260,27 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .header-floating-inner {
-    @apply backdrop-blur-md rounded-2xl border border-lime-200/60 px-4 py-2 flex items-center justify-between pointer-events-auto;
-    background-color: rgba(236, 252, 203, 0.9);
+    @apply backdrop-blur-md rounded-2xl border px-4 py-2 flex items-center justify-between pointer-events-auto;
+    background-color: rgba(75, 77, 114, 0.95);
+    border-color: rgba(255, 255, 255, 0.1);
     box-shadow: var(--shadow-md);
   }
 
   .sidebar-link {
-    @apply flex items-center gap-3 px-4 py-3 text-sm font-medium text-muted-foreground rounded-full transition-all duration-300 font-dm-sans;
+    @apply flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-full transition-all duration-300;
+    color: rgba(255, 255, 255, 0.7);
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .sidebar-link:hover {
-    @apply bg-white/50;
+    @apply bg-white/10;
+    color: rgba(255, 255, 255, 0.9);
   }
 
   .sidebar-link-active {
-    @apply bg-white text-foreground border border-gray-100;
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: var(--shadow-sm);
   }
 

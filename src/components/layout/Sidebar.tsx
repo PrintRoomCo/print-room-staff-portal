@@ -207,15 +207,15 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
                   className="object-contain"
                 />
               </div>
-              <span className="text-foreground text-sm font-semibold">Staff Portal</span>
+              <span className="text-white text-sm font-semibold">Staff Portal</span>
             </Link>
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
               aria-label="Open navigation menu"
-              className="p-2 rounded-full hover:bg-white/50 transition-colors duration-300 ease-spring"
+              className="p-2 rounded-full hover:bg-white/10 transition-colors duration-300 ease-spring"
             >
-              <Menu className="w-5 h-5 text-foreground" />
+              <Menu className="w-5 h-5 text-white" />
             </button>
           </div>
         </div>
@@ -242,27 +242,27 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
             type="button"
             onClick={() => setDrawerOpen(false)}
             aria-label="Close navigation menu"
-            className="p-2 rounded-full hover:bg-white/60 transition-colors duration-300 ease-spring md:hidden"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors duration-300 ease-spring md:hidden"
           >
-            <X className="w-5 h-5 text-muted-foreground" />
+            <X className="w-5 h-5 text-white/70" />
           </button>
           <button
             type="button"
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className="p-2 rounded-full hover:bg-white/60 transition-colors duration-300 ease-spring hidden md:block"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors duration-300 ease-spring hidden md:block"
           >
             {sidebarCollapsed ? (
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <ChevronRight className="w-5 h-5 text-white/70" />
             ) : (
-              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+              <ChevronLeft className="w-5 h-5 text-white/70" />
             )}
           </button>
         </div>
 
         {/* Logo */}
         <div
-          className={`${sidebarCollapsed ? 'px-2 py-4 flex justify-center' : 'p-6'} border-b border-lime-200/60 hidden md:block transition-all duration-300`}
+          className={`${sidebarCollapsed ? 'px-2 py-4 flex justify-center' : 'p-6'} border-b border-white/10 hidden md:block transition-all duration-300`}
         >
           <Link
             href="/dashboard"
@@ -279,10 +279,10 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
             </div>
             {!sidebarCollapsed && (
               <>
-                <div className="h-8 w-px bg-pr-blue/30" />
+                <div className="h-8 w-px bg-white/20" />
                 <div>
-                  <div className="text-foreground text-sm font-semibold whitespace-nowrap">The Print Room</div>
-                  <div className="text-muted-foreground text-xs">Staff Portal</div>
+                  <div className="text-white text-sm font-semibold whitespace-nowrap">The Print Room</div>
+                  <div className="text-white/60 text-xs">Staff Portal</div>
                 </div>
               </>
             )}
@@ -350,7 +350,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
                 </button>
 
                 {isExpanded && (
-                  <div className="ml-4 pl-3 border-l border-lime-200/60 space-y-0.5">
+                  <div className="ml-4 pl-3 border-l border-white/10 space-y-0.5">
                     {section.items.map((item) => {
                       const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                       return (
@@ -372,7 +372,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Logout */}
-        <div className={`${sidebarCollapsed ? 'p-2' : 'p-3'} border-t border-lime-200/60 transition-all duration-300`}>
+        <div className={`${sidebarCollapsed ? 'p-2' : 'p-3'} border-t border-white/10 transition-all duration-300`}>
           <button
             type="button"
             onClick={async () => {
