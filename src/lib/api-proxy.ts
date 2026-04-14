@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getSupabaseServer, getSupabaseAdmin } from '@/lib/supabase-server'
 
 /**
  * Validates that the request comes from an authenticated staff user
@@ -75,52 +75,21 @@ export async function proxyRequest(
 }
 
 async function verifyStaffAuth(
-  request: NextRequest,
+  _request: NextRequest,
   requiredPermission: string
 ): Promise<{ error?: string; status: number }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  const supabase = await getSupabaseServer()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  // Extract access token from cookies
-  const cookieHeader = request.headers.get('cookie') ?? ''
-  let userId: string | null = null
-
-  if (cookieHeader) {
-    const cookies = Object.fromEntries(
-      cookieHeader.split(';').map(c => {
-        const [key, ...val] = c.trim().split('=')
-        return [key, val.join('=')]
-      })
-    )
-
-    const accessTokenKey = Object.keys(cookies).find(k =>
-      k.includes('auth-token') || k.includes('access-token')
-    )
-
-    if (accessTokenKey) {
-      try {
-        const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey)
-        const tokenData = JSON.parse(decodeURIComponent(cookies[accessTokenKey]))
-        const accessToken = Array.isArray(tokenData) ? tokenData[0] : tokenData
-        const { data: { user } } = await supabaseAuth.auth.getUser(accessToken)
-        userId = user?.id ?? null
-      } catch {
-        // Token parsing failed
-      }
-    }
-  }
-
-  if (!userId) {
+  if (!user) {
     return { error: 'Unauthorized', status: 401 }
   }
 
-  // Check staff permissions
-  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey)
-  const { data: staff } = await supabaseAdmin
+  const admin = getSupabaseAdmin()
+  const { data: staff } = await admin
     .from('staff_users')
     .select('role, permissions')
-    .eq('user_id', userId)
+    .eq('user_id', user.id)
     .eq('is_active', true)
     .single()
 
