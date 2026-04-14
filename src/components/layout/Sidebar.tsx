@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -8,7 +9,7 @@ import { useStaff } from '@/contexts/StaffContext'
 import type { StaffPermission } from '@/types/staff'
 import {
   LayoutDashboard,
-  Image,
+  Image as ImageIcon,
   Eye,
   ShoppingBag,
   FileText,
@@ -24,6 +25,7 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
 } from 'lucide-react'
 
 interface NavItem {
@@ -52,10 +54,10 @@ const NAV_SECTIONS: NavSection[] = [
   {
     id: 'image-generator',
     label: 'Image Generator',
-    icon: Image,
+    icon: ImageIcon,
     permission: 'image-generator',
     items: [
-      { label: 'Overview', href: '/image-generator', icon: Image },
+      { label: 'Overview', href: '/image-generator', icon: ImageIcon },
       { label: 'Design Tool Views', href: '/image-generator/views', icon: Eye },
       { label: 'Ecommerce Images', href: '/image-generator/ecommerce', icon: ShoppingBag },
       { label: 'Tech Pack Assets', href: '/image-generator/techpacks', icon: FileText },
@@ -116,6 +118,18 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
   const { hasPermission, isAdmin } = useStaff()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+  // Hydrate sidebar collapsed state from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('staff-sidebar-collapsed')
+    if (stored === 'true') setSidebarCollapsed(true)
+  }, [])
+
+  // Persist sidebar collapsed state
+  useEffect(() => {
+    localStorage.setItem('staff-sidebar-collapsed', String(sidebarCollapsed))
+  }, [sidebarCollapsed])
 
   // Auto-expand the section that contains the current path
   useEffect(() => {
@@ -133,6 +147,17 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setDrawerOpen(false)
   }, [pathname])
+
+  // Close drawer on Escape key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDrawerOpen(false)
+    }
+    if (drawerOpen) {
+      document.addEventListener('keydown', handleEscape)
+    }
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [drawerOpen])
 
   // Lock body scroll when drawer open
   useEffect(() => {
@@ -166,154 +191,208 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
     return section
   })
 
-  const sidebarContent = (
-    <>
-      {/* Logo */}
-      <div className="p-4 border-b border-white/10">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-pr-blue flex items-center justify-center text-white text-sm font-bold">
-            PR
-          </div>
-          <div>
-            <div className="text-white text-sm font-semibold">The Print Room</div>
-            <div className="text-gray-400 text-xs">Staff Portal</div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        {visibleSections.map((section) => {
-          const isExpanded = expandedSections.has(section.id)
-          const hasMultipleItems = section.items.length > 1
-          const isSectionActive = section.items.some(
-            item => pathname === item.href || pathname.startsWith(item.href + '/')
-          )
-
-          // Single-item sections render as a direct link
-          if (!hasMultipleItems) {
-            const item = section.items[0]
-            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-            return (
-              <Link
-                key={section.id}
-                href={item.href}
-                className={`staff-sidebar-link ${isActive ? 'staff-sidebar-link-active' : ''}`}
-              >
-                <section.icon className="w-4 h-4 flex-shrink-0" />
-                <span>{section.label}</span>
-              </Link>
-            )
-          }
-
-          // Multi-item sections render as collapsible groups
-          return (
-            <div key={section.id} className="space-y-0.5">
-              <button
-                type="button"
-                onClick={() => toggleSection(section.id)}
-                className={`staff-sidebar-link w-full justify-between ${isSectionActive && !isExpanded ? 'staff-sidebar-link-active' : ''}`}
-              >
-                <span className="flex items-center gap-3">
-                  <section.icon className="w-4 h-4 flex-shrink-0" />
-                  <span>{section.label}</span>
-                </span>
-                {isExpanded ? (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5" />
-                )}
-              </button>
-
-              {isExpanded && (
-                <div className="ml-4 pl-3 border-l border-white/10 space-y-0.5">
-                  {section.items.map((item) => {
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`staff-sidebar-link text-xs ${isActive ? 'staff-sidebar-link-active' : ''}`}
-                      >
-                        <item.icon className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>{item.label}</span>
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </nav>
-
-      {/* Logout */}
-      <div className="p-3 border-t border-white/10">
-        <button
-          type="button"
-          onClick={async () => {
-            await signOut()
-            router.push('/sign-in')
-          }}
-          className="staff-sidebar-link w-full"
-        >
-          <LogOut className="w-4 h-4 flex-shrink-0" />
-          <span>Sign Out</span>
-        </button>
-      </div>
-    </>
-  )
-
   return (
     <div className="flex min-h-screen bg-white">
-      {/* Mobile header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b px-4 py-3 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-pr-blue flex items-center justify-center text-white text-xs font-bold">
-            PR
+      {/* Mobile Floating Header */}
+      <nav aria-label="Mobile header" className="md:hidden">
+        <div className="header-floating-wrapper">
+          <div className="header-floating-inner">
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 shadow-sm flex items-center justify-center overflow-hidden">
+                <Image
+                  src="/print-room-logo.png"
+                  alt="Print Room Logo"
+                  width={24}
+                  height={24}
+                  className="object-contain"
+                />
+              </div>
+              <span className="text-foreground text-sm font-semibold">Staff Portal</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Open navigation menu"
+              className="p-2 rounded-full hover:bg-white/50 transition-colors duration-300 ease-spring"
+            >
+              <Menu className="w-5 h-5 text-foreground" />
+            </button>
           </div>
-          <span className="text-sm font-semibold text-foreground">Staff Portal</span>
-        </Link>
-        <button
-          type="button"
-          onClick={() => setDrawerOpen(true)}
-          aria-label="Open navigation"
-          className="p-2 rounded-md hover:bg-gray-100"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-      </div>
+        </div>
+      </nav>
 
-      {/* Drawer backdrop */}
+      {/* Drawer Backdrop */}
       {drawerOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-40 md:hidden"
           onClick={() => setDrawerOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 w-60 staff-sidebar flex flex-col z-50 transition-transform duration-300 ${
+        className={`fixed inset-y-0 left-0 ${sidebarCollapsed ? 'w-[80px]' : 'w-64'} glass-sidebar flex flex-col z-50 transition-all duration-300 ease-spring ${
           drawerOpen ? 'translate-x-0' : '-translate-x-full'
-        } md:translate-x-0`}
+        } md:translate-x-0 overflow-hidden`}
       >
-        {/* Mobile close */}
-        <div className="flex justify-end p-2 md:hidden">
+        {/* Top bar: mobile close + desktop collapse toggle */}
+        <div className="flex items-center justify-end p-2">
           <button
             type="button"
             onClick={() => setDrawerOpen(false)}
-            className="p-1.5 rounded-md hover:bg-white/10 text-gray-400"
+            aria-label="Close navigation menu"
+            className="p-2 rounded-full hover:bg-white/60 transition-colors duration-300 ease-spring md:hidden"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="p-2 rounded-full hover:bg-white/60 transition-colors duration-300 ease-spring hidden md:block"
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            ) : (
+              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
+            )}
           </button>
         </div>
-        {sidebarContent}
+
+        {/* Logo */}
+        <div
+          className={`${sidebarCollapsed ? 'px-2 py-4 flex justify-center' : 'p-6'} border-b border-lime-200/60 hidden md:block transition-all duration-300`}
+        >
+          <Link
+            href="/dashboard"
+            className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} group`}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center overflow-hidden transition-all duration-300 ease-spring group-hover:shadow-md flex-shrink-0">
+              <Image
+                src="/print-room-logo.png"
+                alt="Print Room Logo"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
+            </div>
+            {!sidebarCollapsed && (
+              <>
+                <div className="h-8 w-px bg-pr-blue/30" />
+                <div>
+                  <div className="text-foreground text-sm font-semibold whitespace-nowrap">The Print Room</div>
+                  <div className="text-muted-foreground text-xs">Staff Portal</div>
+                </div>
+              </>
+            )}
+          </Link>
+        </div>
+
+        {/* Navigation */}
+        <nav className={`flex-1 ${sidebarCollapsed ? 'px-2' : 'px-3'} py-4 space-y-1 overflow-y-auto transition-all duration-300`}>
+          {visibleSections.map((section) => {
+            const isExpanded = expandedSections.has(section.id)
+            const hasMultipleItems = section.items.length > 1
+            const isSectionActive = section.items.some(
+              item => pathname === item.href || pathname.startsWith(item.href + '/')
+            )
+
+            // Single-item sections render as a direct link
+            if (!hasMultipleItems) {
+              const item = section.items[0]
+              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={section.id}
+                  href={item.href}
+                  className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''} ${sidebarCollapsed ? 'justify-center !px-2' : ''}`}
+                  title={sidebarCollapsed ? section.label : undefined}
+                >
+                  <section.icon className="w-5 h-5 flex-shrink-0" />
+                  {!sidebarCollapsed && <span>{section.label}</span>}
+                </Link>
+              )
+            }
+
+            // Multi-item sections: when collapsed, link to first item
+            if (sidebarCollapsed) {
+              const firstItem = section.items[0]
+              return (
+                <Link
+                  key={section.id}
+                  href={firstItem.href}
+                  className={`sidebar-link justify-center !px-2 ${isSectionActive ? 'sidebar-link-active' : ''}`}
+                  title={section.label}
+                >
+                  <section.icon className="w-5 h-5 flex-shrink-0" />
+                </Link>
+              )
+            }
+
+            // Multi-item sections: expanded sidebar — collapsible groups
+            return (
+              <div key={section.id} className="space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.id)}
+                  className={`sidebar-link w-full justify-between ${isSectionActive && !isExpanded ? 'sidebar-link-active' : ''}`}
+                >
+                  <span className="flex items-center gap-3">
+                    <section.icon className="w-5 h-5 flex-shrink-0" />
+                    <span>{section.label}</span>
+                  </span>
+                  {isExpanded ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </button>
+
+                {isExpanded && (
+                  <div className="ml-4 pl-3 border-l border-lime-200/60 space-y-0.5">
+                    {section.items.map((item) => {
+                      const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`sidebar-link text-xs ${isActive ? 'sidebar-link-active' : ''}`}
+                        >
+                          <item.icon className="w-4 h-4 flex-shrink-0" />
+                          <span>{item.label}</span>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </nav>
+
+        {/* Logout */}
+        <div className={`${sidebarCollapsed ? 'p-2' : 'p-3'} border-t border-lime-200/60 transition-all duration-300`}>
+          <button
+            type="button"
+            onClick={async () => {
+              await signOut()
+              router.push('/sign-in')
+            }}
+            className={`sidebar-link w-full ${sidebarCollapsed ? 'justify-center !px-2' : ''}`}
+            title={sidebarCollapsed ? 'Sign Out' : undefined}
+          >
+            <LogOut className="w-5 h-5 flex-shrink-0" />
+            {!sidebarCollapsed && <span>Sign Out</span>}
+          </button>
+        </div>
       </aside>
 
-      {/* Main content */}
-      <main className="flex-1 md:ml-60 pt-14 md:pt-0">
-        <div className="p-6 md:p-8">{children}</div>
+      {/* Main Content */}
+      <main
+        className={`flex-1 ${sidebarCollapsed ? 'md:ml-[80px]' : 'md:ml-64'} pt-16 md:pt-0 transition-[margin] duration-300 ease-spring`}
+      >
+        <div className="p-4 md:p-8">{children}</div>
       </main>
     </div>
   )
