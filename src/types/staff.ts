@@ -7,6 +7,7 @@ export type StaffPermission =
   | 'chatbot-admin'
   | 'presentations'
   | 'settings'
+  | 'quote-tool'
 
 export interface StaffUser {
   id: string

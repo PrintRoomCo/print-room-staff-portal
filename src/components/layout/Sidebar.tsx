@@ -35,7 +35,7 @@ interface NavItem {
 }
 
 interface NavSection {
-  id: StaffPermission | 'dashboard' | 'settings'
+  id: StaffPermission | 'dashboard' | 'settings' | 'quote-tool'
   label: string
   icon: React.ComponentType<{ className?: string }>
   items: NavItem[]
@@ -62,6 +62,16 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Ecommerce Images', href: '/image-generator/ecommerce', icon: ShoppingBag },
       { label: 'Tech Pack Assets', href: '/image-generator/techpacks', icon: FileText },
       { label: 'All Jobs', href: '/image-generator/jobs', icon: List },
+    ],
+  },
+  {
+    id: 'quote-tool',
+    label: 'Quote Tool',
+    icon: FileText,
+    permission: 'quote-tool',
+    items: [
+      { label: 'Create Quote', href: '/quote-tool', icon: FileText },
+      { label: 'Saved Quotes', href: '/quote-tool/quotes', icon: List },
     ],
   },
   {
