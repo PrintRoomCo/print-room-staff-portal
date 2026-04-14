@@ -6,6 +6,7 @@ export async function middleware(request: NextRequest) {
 
   if (
     pathname.startsWith('/sign-in') ||
+    pathname.startsWith('/sign-up') ||
     pathname.startsWith('/callback') ||
     pathname.startsWith('/api/')
   ) {

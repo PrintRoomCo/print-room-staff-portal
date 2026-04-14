@@ -246,7 +246,8 @@ h1, h2, h3, h4, h5, h6 {
    * ============================================ */
 
   .glass-sidebar {
-    @apply bg-[#ECFCCB] backdrop-blur-sm border-r border-lime-200/60;
+    @apply backdrop-blur-sm border-r border-lime-200/60;
+    background-color: #ECFCCB;
   }
 
   .header-floating-wrapper {
@@ -254,7 +255,8 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .header-floating-inner {
-    @apply bg-[#ECFCCB]/90 backdrop-blur-md rounded-2xl border border-lime-200/60 px-4 py-2 flex items-center justify-between pointer-events-auto;
+    @apply backdrop-blur-md rounded-2xl border border-lime-200/60 px-4 py-2 flex items-center justify-between pointer-events-auto;
+    background-color: rgba(236, 252, 203, 0.9);
     box-shadow: var(--shadow-md);
   }
 
@@ -314,7 +316,8 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .glass-badge-yellow {
-    @apply bg-[#F1FFA5] text-black border border-black/10 rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply text-black border border-black/10 rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background-color: #F1FFA5;
   }
 
   .glass-badge-red {
@@ -347,12 +350,14 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .glass-company-badge {
-    @apply bg-[#F1FFA5] border border-black/10 rounded-xl;
+    @apply border border-black/10 rounded-xl;
+    background-color: #F1FFA5;
     box-shadow: var(--shadow-sm);
   }
 
   .glass-info-box {
-    @apply bg-[#F1FFA5] border border-black/10 rounded-xl;
+    @apply border border-black/10 rounded-xl;
+    background-color: #F1FFA5;
     box-shadow: var(--shadow-sm);
   }
 
