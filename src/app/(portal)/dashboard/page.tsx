@@ -57,10 +57,10 @@ const TOOLS: ToolCard[] = [
   {
     id: 'presentations',
     title: 'Presentations',
-    description: 'Interactive slide decks and data visualisations.',
+    description: 'Build structured client proposals with reusable product, pricing, and packaging sections.',
     href: '/presentations',
     icon: Presentation,
-    status: 'coming-soon',
+    status: 'active',
   },
 ]
 
