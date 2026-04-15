@@ -39,10 +39,10 @@ export default function QuoteToolPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+      <div className="-m-4 md:-m-8 h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto" />
-          <p className="mt-4 text-sm text-gray-600">Initializing quote tool...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
+          <p className="mt-4 text-sm text-muted-foreground">Initializing quote tool...</p>
         </div>
       </div>
     )
@@ -50,12 +50,12 @@ export default function QuoteToolPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+      <div className="-m-4 md:-m-8 h-screen flex items-center justify-center">
         <div className="text-center max-w-md">
-          <p className="text-red-600 font-medium">{error}</p>
+          <p className="text-destructive font-medium">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 text-sm text-blue-600 hover:underline"
+            className="mt-4 text-sm text-primary hover:underline"
           >
             Retry
           </button>
@@ -67,7 +67,7 @@ export default function QuoteToolPage() {
   if (!staffToken) return null
 
   return (
-    <div className="h-[calc(100vh-4rem)]">
+    <div className="-m-4 md:-m-8 h-screen">
       <DesignToolEmbed
         staffToken={staffToken}
         onQuoteSubmitted={handleQuoteSubmitted}

@@ -272,7 +272,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
 
         {/* Logo */}
         <div
-          className={`${sidebarCollapsed ? 'px-2 py-4 flex justify-center' : 'p-6'} border-b border-white/10 hidden md:block transition-all duration-300`}
+          className={`${sidebarCollapsed ? 'px-2 py-4 flex justify-center' : 'p-6'} hidden md:block transition-all duration-300`}
         >
           <Link
             href="/dashboard"
@@ -300,7 +300,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Navigation */}
-        <nav className={`flex-1 ${sidebarCollapsed ? 'px-2' : 'px-3'} py-4 space-y-1 overflow-y-auto transition-all duration-300`}>
+        <nav className={`flex-1 ${sidebarCollapsed ? 'px-2' : 'px-3'} py-4 space-y-1 overflow-y-auto sidebar-scroll transition-all duration-300`}>
           {visibleSections.map((section) => {
             const isExpanded = expandedSections.has(section.id)
             const hasMultipleItems = section.items.length > 1
@@ -382,7 +382,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
         </nav>
 
         {/* Logout */}
-        <div className={`${sidebarCollapsed ? 'p-2' : 'p-3'} border-t border-white/10 transition-all duration-300`}>
+        <div className={`${sidebarCollapsed ? 'p-2' : 'p-3'} transition-all duration-300`}>
           <button
             type="button"
             onClick={async () => {

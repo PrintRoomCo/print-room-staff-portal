@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { ArrowLeft, FileText, Send, Copy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,13 +27,13 @@ interface StaffQuote {
   updated_at: string
 }
 
-const STATUS_COLORS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  draft: 'secondary',
-  sent: 'default',
-  accepted: 'default',
+const STATUS_VARIANT: Record<string, 'warning' | 'info' | 'success' | 'destructive' | 'gray'> = {
+  draft: 'gray',
+  sent: 'info',
+  accepted: 'success',
   rejected: 'destructive',
-  expired: 'outline',
-  converted: 'default',
+  expired: 'warning',
+  converted: 'success',
 }
 
 function formatCurrency(amount: number | null) {
@@ -77,134 +78,159 @@ export default function QuoteDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      <div className="max-w-4xl space-y-8">
+        <div className="flex items-center justify-center py-24">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        </div>
       </div>
     )
   }
 
   if (error || !quote) {
     return (
-      <div className="space-y-4">
-        <Link href="/quote-tool/quotes" className="text-sm text-blue-600 hover:underline">
-          &larr; Back to quotes
+      <div className="max-w-4xl space-y-6">
+        <Link href="/quote-tool/quotes" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Back to quotes
         </Link>
-        <p className="text-red-600">{error || 'Quote not found'}</p>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+            <FileText className="w-8 h-8 text-gray-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">Quote not found</h2>
+          <p className="text-muted-foreground text-sm mt-2">{error || 'This quote may have been deleted.'}</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <Link href="/quote-tool/quotes" className="text-sm text-blue-600 hover:underline">
-            &larr; Back to quotes
-          </Link>
-          <h1 className="text-2xl font-semibold mt-2">Quote Details</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={STATUS_COLORS[quote.status] || 'secondary'} className="text-sm">
+    <div className="max-w-4xl space-y-8">
+      {/* Back link + page header */}
+      <div>
+        <Link href="/quote-tool/quotes" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
+          <ArrowLeft className="w-4 h-4" />
+          Back to quotes
+        </Link>
+        <div className="flex items-center justify-between mt-4">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              {quote.customer_name || 'Unnamed Quote'}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Created {formatDate(quote.created_at)}
+            </p>
+          </div>
+          <Badge variant={STATUS_VARIANT[quote.status] || 'gray'} className="text-sm px-3 py-1">
             {quote.status}
           </Badge>
         </div>
       </div>
 
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Subtotal</p>
+          <p className="text-2xl font-semibold text-foreground">{formatCurrency(quote.subtotal)}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Discount</p>
+          <p className="text-2xl font-semibold text-foreground">{quote.discount_percent ?? 0}%</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Total</p>
+          <p className="text-2xl font-semibold text-primary">{formatCurrency(quote.total)}</p>
+        </Card>
+        <Card className="p-4">
+          <p className="text-sm text-muted-foreground">Valid Until</p>
+          <p className="text-lg font-semibold text-foreground">
+            {quote.valid_until
+              ? new Date(quote.valid_until).toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' })
+              : '—'}
+          </p>
+        </Card>
+      </div>
+
+      {/* Details grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Customer Details</CardTitle>
+            <CardTitle className="text-base">Customer Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
-            <div>
-              <span className="text-gray-500">Name:</span>{' '}
-              <span className="font-medium">{quote.customer_name || '—'}</span>
+          <CardContent className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Name</span>
+              <span className="font-medium text-foreground">{quote.customer_name || '—'}</span>
             </div>
-            <div>
-              <span className="text-gray-500">Email:</span>{' '}
-              <span className="font-medium">{quote.customer_email || '—'}</span>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Email</span>
+              <span className="font-medium text-foreground">{quote.customer_email || '—'}</span>
             </div>
-            <div>
-              <span className="text-gray-500">Company:</span>{' '}
-              <span className="font-medium">{quote.customer_company || '—'}</span>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Company</span>
+              <span className="font-medium text-foreground">{quote.customer_company || '—'}</span>
             </div>
-            <div>
-              <span className="text-gray-500">Phone:</span>{' '}
-              <span className="font-medium">{quote.customer_phone || '—'}</span>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Phone</span>
+              <span className="font-medium text-foreground">{quote.customer_phone || '—'}</span>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Quote Summary</CardTitle>
+            <CardTitle className="text-base">Quote Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm">
+          <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Subtotal:</span>
-              <span className="font-medium">{formatCurrency(quote.subtotal)}</span>
+              <span className="text-muted-foreground">Quote ID</span>
+              <span className="font-mono text-xs text-muted-foreground">{quote.id.slice(0, 8)}...</span>
             </div>
-            {(quote.discount_percent ?? 0) > 0 && (
-              <div className="flex justify-between text-green-600">
-                <span>Discount ({quote.discount_percent}%):</span>
-                <span>-{formatCurrency((quote.subtotal ?? 0) * ((quote.discount_percent ?? 0) / 100))}</span>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Last Updated</span>
+              <span className="font-medium text-foreground">{formatDate(quote.updated_at)}</span>
+            </div>
+            {quote.monday_item_id && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Monday.com</span>
+                <span className="font-medium text-foreground">#{quote.monday_item_id}</span>
               </div>
             )}
-            <div className="flex justify-between border-t pt-2 text-base font-semibold">
-              <span>Total:</span>
-              <span>{formatCurrency(quote.total)}</span>
-            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Quote Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <span className="text-gray-500">Quote ID:</span>
-              <p className="font-mono text-xs mt-1">{quote.id}</p>
-            </div>
-            <div>
-              <span className="text-gray-500">Created:</span>
-              <p className="mt-1">{formatDate(quote.created_at)}</p>
-            </div>
-            <div>
-              <span className="text-gray-500">Last Updated:</span>
-              <p className="mt-1">{formatDate(quote.updated_at)}</p>
-            </div>
-            <div>
-              <span className="text-gray-500">Valid Until:</span>
-              <p className="mt-1">{formatDate(quote.valid_until)}</p>
-            </div>
-          </div>
-          {quote.staff_notes && (
-            <div className="mt-4 pt-4 border-t">
-              <span className="text-gray-500">Staff Notes:</span>
-              <p className="mt-1 whitespace-pre-wrap">{quote.staff_notes}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Staff notes */}
+      {quote.staff_notes && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Staff Notes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">{quote.staff_notes}</p>
+          </CardContent>
+        </Card>
+      )}
 
+      {/* Actions */}
       <div className="flex gap-3">
-        <Button
-          variant="default"
-          onClick={() => router.push('/quote-tool')}
-        >
-          Create New Quote
+        <Button variant="accent" onClick={() => router.push('/quote-tool')}>
+          <FileText className="w-4 h-4 mr-2" />
+          New Quote
         </Button>
         <Button
-          variant="outline"
-          onClick={() => {
-            // TODO: Implement send to customer
-            alert('Send to customer functionality coming soon')
-          }}
+          variant="secondary"
+          onClick={() => alert('Send to customer functionality coming soon')}
         >
+          <Send className="w-4 h-4 mr-2" />
           Send to Customer
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => alert('Duplicate functionality coming soon')}
+        >
+          <Copy className="w-4 h-4 mr-2" />
+          Duplicate
         </Button>
       </div>
     </div>

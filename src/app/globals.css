@@ -284,6 +284,15 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: var(--shadow-sm);
   }
 
+  /* Hide sidebar scrollbar completely */
+  .sidebar-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .sidebar-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
   /* ============================================
    * INPUT SYSTEM
    * Gray-fill pill style

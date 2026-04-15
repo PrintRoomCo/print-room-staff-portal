@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { FileText } from 'lucide-react'
+import { Header } from '@/components/image-generator/header'
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 interface StaffQuote {
   id: string
@@ -18,13 +22,13 @@ interface StaffQuote {
   updated_at: string
 }
 
-const STATUS_COLORS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  draft: 'secondary',
-  sent: 'default',
-  accepted: 'default',
+const STATUS_VARIANT: Record<string, 'warning' | 'info' | 'success' | 'destructive' | 'gray'> = {
+  draft: 'gray',
+  sent: 'info',
+  accepted: 'success',
   rejected: 'destructive',
-  expired: 'outline',
-  converted: 'default',
+  expired: 'warning',
+  converted: 'success',
 }
 
 function formatCurrency(amount: number | null) {
@@ -63,10 +67,10 @@ export default function SavedQuotesPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Saved Quotes</h1>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900" />
+      <div className="space-y-8">
+        <Header title="Saved Quotes" description="View and manage quotes created for customers" />
+        <div className="flex items-center justify-center py-24">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       </div>
     )
@@ -74,74 +78,74 @@ export default function SavedQuotesPage() {
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Saved Quotes</h1>
-        <p className="text-red-600">{error}</p>
+      <div className="space-y-8">
+        <Header title="Saved Quotes" description="View and manage quotes created for customers" />
+        <div className="text-center py-12 text-destructive">{error}</div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Saved Quotes</h1>
-        <Link
-          href="/quote-tool"
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Create Quote
-        </Link>
-      </div>
+    <div className="space-y-8">
+      <Header
+        title="Saved Quotes"
+        description="View and manage quotes created for customers"
+        action={
+          <Link href="/quote-tool">
+            <Button variant="accent">Create Quote</Button>
+          </Link>
+        }
+      />
 
       {quotes.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">No quotes yet. Create your first quote to get started.</p>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
+            <FileText className="w-8 h-8 text-gray-400" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground">No quotes yet</h2>
+          <p className="text-muted-foreground text-sm mt-2 max-w-md">
+            Create your first quote to get started. Quotes will appear here once saved.
+          </p>
+          <Link href="/quote-tool" className="mt-6">
+            <Button variant="accent">Create Quote</Button>
+          </Link>
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <Card className="overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Customer</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Company</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Total</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Created</th>
-                <th className="px-4 py-3"></th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Customer</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Company</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-3 text-right font-medium text-muted-foreground">Total</th>
+                <th className="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {quotes.map((quote) => (
-                <tr key={quote.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={quote.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
-                    <div>
-                      <p className="font-medium text-gray-900">{quote.customer_name || '—'}</p>
-                      {quote.customer_email && (
-                        <p className="text-xs text-gray-500">{quote.customer_email}</p>
-                      )}
-                    </div>
+                    <Link href={`/quote-tool/quotes/${quote.id}`} className="font-medium text-foreground hover:underline">
+                      {quote.customer_name || 'Unnamed'}
+                    </Link>
+                    {quote.customer_email && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{quote.customer_email}</p>
+                    )}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{quote.customer_company || '—'}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{quote.customer_company || '—'}</td>
                   <td className="px-4 py-3">
-                    <Badge variant={STATUS_COLORS[quote.status] || 'secondary'}>
+                    <Badge variant={STATUS_VARIANT[quote.status] || 'gray'}>
                       {quote.status}
                     </Badge>
                   </td>
-                  <td className="px-4 py-3 text-right font-medium">{formatCurrency(quote.total)}</td>
-                  <td className="px-4 py-3 text-gray-500">{formatDate(quote.created_at)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/quote-tool/quotes/${quote.id}`}
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      View
-                    </Link>
-                  </td>
+                  <td className="px-4 py-3 text-right font-medium text-foreground">{formatCurrency(quote.total)}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{formatDate(quote.created_at)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
     </div>
   )
