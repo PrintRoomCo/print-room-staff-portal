@@ -1,17 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { type ReactNode, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowLeft,
   ChevronDown,
   ChevronUp,
+  Download,
   Eye,
   PencilLine,
   Plus,
   Save,
   Trash2,
 } from 'lucide-react'
+import { PresentationField } from '@/components/presentations/presentation-field'
 import { PresentationPreview } from '@/components/presentations/presentation-preview'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -49,6 +51,8 @@ export function PresentationEditor({ presentationId }: PresentationEditorProps) 
   const [error, setError] = useState<string | null>(null)
   const [activeView, setActiveView] = useState<'editor' | 'preview'>('editor')
   const [isDirty, setIsDirty] = useState(false)
+  const [exporting, setExporting] = useState(false)
+  const [pendingExportTitle, setPendingExportTitle] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchPresentation() {
@@ -70,6 +74,42 @@ export function PresentationEditor({ presentationId }: PresentationEditorProps) 
 
     fetchPresentation()
   }, [presentationId])
+
+  useEffect(() => {
+    if (!pendingExportTitle || activeView !== 'preview') return
+
+    const previousTitle = document.title
+    let restored = false
+
+    const restore = () => {
+      if (restored) return
+      restored = true
+      document.title = previousTitle
+      document.body.classList.remove('printing-presentation')
+      window.removeEventListener('afterprint', restore)
+      setPendingExportTitle(null)
+      setExporting(false)
+    }
+
+    document.body.classList.add('printing-presentation')
+    document.title = pendingExportTitle.replace(/\.pdf$/i, '')
+    window.addEventListener('afterprint', restore)
+
+    const printTimer = window.setTimeout(() => {
+      window.print()
+      window.setTimeout(restore, 1200)
+    }, 220)
+
+    return () => {
+      window.clearTimeout(printTimer)
+      window.removeEventListener('afterprint', restore)
+
+      if (!restored) {
+        document.title = previousTitle
+        document.body.classList.remove('printing-presentation')
+      }
+    }
+  }, [activeView, pendingExportTitle])
 
   function updatePresentationField<K extends keyof PresentationDetail>(field: K, value: PresentationDetail[K]) {
     setPresentation(current => (current ? { ...current, [field]: value } : current))
@@ -194,6 +234,28 @@ export function PresentationEditor({ presentationId }: PresentationEditorProps) 
     }
   }
 
+  async function handleExport() {
+    if (!presentation || presentation.status !== 'ready' || isDirty) return
+
+    setExporting(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/presentations/${presentationId}/export`)
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error || 'Failed to prepare export')
+      }
+
+      const payload = await response.json()
+      setActiveView('preview')
+      setPendingExportTitle(payload.exportTitle || buildPresentationExportTitle(presentation))
+    } catch (exportError) {
+      setError(exportError instanceof Error ? exportError.message : 'Failed to export presentation')
+      setExporting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -222,8 +284,8 @@ export function PresentationEditor({ presentationId }: PresentationEditorProps) 
   if (!presentation) return null
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+    <div className="presentation-editor space-y-8">
+      <div className="presentation-editor__chrome flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <Link
             href="/presentations"
@@ -277,11 +339,20 @@ export function PresentationEditor({ presentationId }: PresentationEditorProps) 
             <Save className="mr-2 h-4 w-4" />
             {saving ? 'Saving...' : 'Save changes'}
           </Button>
+          <Button
+            variant="secondary"
+            onClick={handleExport}
+            disabled={presentation.status !== 'ready' || exporting || isDirty}
+            title={isDirty ? 'Save changes before exporting.' : undefined}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            {exporting ? 'Preparing PDF...' : 'Export PDF'}
+          </Button>
         </div>
       </div>
 
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+        <div className="presentation-editor__error rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           {error}
         </div>
       )}
@@ -295,42 +366,42 @@ export function PresentationEditor({ presentationId }: PresentationEditorProps) 
               <CardTitle className="text-lg">Proposal details</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
-              <Field label="Client name">
+              <PresentationField label="Client name">
                 <Input
                   value={presentation.clientName}
                   onChange={event => updatePresentationField('clientName', event.target.value)}
                   placeholder="Four Square"
                 />
-              </Field>
-              <Field label="Client brand">
+              </PresentationField>
+              <PresentationField label="Client brand">
                 <Input
                   value={presentation.clientBrand}
                   onChange={event => updatePresentationField('clientBrand', event.target.value)}
                   placeholder="Four Square"
                 />
-              </Field>
-              <Field label="Proposal title">
+              </PresentationField>
+              <PresentationField label="Proposal title">
                 <Input
                   value={presentation.proposalTitle}
                   onChange={event => updatePresentationField('proposalTitle', event.target.value)}
                   placeholder="Proposed product range"
                 />
-              </Field>
-              <Field label="Season label">
+              </PresentationField>
+              <PresentationField label="Season label">
                 <Input
                   value={presentation.seasonLabel}
                   onChange={event => updatePresentationField('seasonLabel', event.target.value)}
                   placeholder="Summer 2026/27"
                 />
-              </Field>
-              <Field label="Cover date">
+              </PresentationField>
+              <PresentationField label="Cover date">
                 <Input
                   value={presentation.coverDateLabel}
                   onChange={event => updatePresentationField('coverDateLabel', event.target.value)}
                   placeholder="April 2026"
                 />
-              </Field>
-              <Field label="Status">
+              </PresentationField>
+              <PresentationField label="Status">
                 <select
                   value={presentation.status}
                   onChange={event => updatePresentationField('status', event.target.value as PresentationDetail['status'])}
@@ -340,15 +411,15 @@ export function PresentationEditor({ presentationId }: PresentationEditorProps) 
                   <option value="ready">Ready</option>
                   <option value="archived">Archived</option>
                 </select>
-              </Field>
+              </PresentationField>
               <div className="md:col-span-2">
-                <Field label="Internal notes">
+                <PresentationField label="Internal notes">
                   <Textarea
                     value={presentation.notes}
                     onChange={event => updatePresentationField('notes', event.target.value)}
                     placeholder="Optional notes for the team"
                   />
-                </Field>
+                </PresentationField>
               </div>
             </CardContent>
           </Card>
@@ -447,14 +518,14 @@ function SectionEditorCard({
             {!section.isEnabled && <Badge variant="gray">Hidden from preview</Badge>}
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            <Field label="Section title">
+            <PresentationField label="Section title">
               <Input
                 value={section.title}
                 onChange={event => updateBase('title', event.target.value)}
                 placeholder="Section title"
               />
-            </Field>
-            <Field label="Show in proposal">
+            </PresentationField>
+            <PresentationField label="Show in proposal">
               <div className="flex h-10 items-center justify-between rounded-full border border-gray-200 bg-white px-5 text-sm text-foreground">
                 <span>{section.isEnabled ? 'Enabled' : 'Disabled'}</span>
                 <input
@@ -464,7 +535,7 @@ function SectionEditorCard({
                   className="h-4 w-4 rounded border-gray-300"
                 />
               </div>
-            </Field>
+            </PresentationField>
           </div>
         </div>
 
@@ -483,13 +554,13 @@ function SectionEditorCard({
 
       <div className="mt-5 space-y-4">
         {(section.kind === 'cover' || section.kind === 'brand-intro' || section.kind === 'brand-context') && (
-          <Field label="Body copy">
+          <PresentationField label="Body copy">
             <Textarea
               value={section.body}
               onChange={event => updateBase('body', event.target.value)}
               placeholder="Add client-facing copy"
             />
-          </Field>
+          </PresentationField>
         )}
 
         {section.kind === 'product-story' && (
@@ -540,44 +611,44 @@ function ProductStoryEditor({
 }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <Field label="Product name">
+      <PresentationField label="Product name">
         <Input
           value={payload.productName}
           onChange={event => onChange({ ...payload, productName: event.target.value })}
           placeholder="Beach towel"
         />
-      </Field>
-      <Field label="Tagline">
+      </PresentationField>
+      <PresentationField label="Tagline">
         <Input
           value={payload.tagline}
           onChange={event => onChange({ ...payload, tagline: event.target.value })}
           placeholder="Dry off in style"
         />
-      </Field>
+      </PresentationField>
       <div className="md:col-span-2">
-        <Field label="Story copy">
+        <PresentationField label="Story copy">
           <Textarea
             value={payload.storyCopy}
             onChange={event => onChange({ ...payload, storyCopy: event.target.value })}
             placeholder="Write the narrative hook for this product"
           />
-        </Field>
+        </PresentationField>
       </div>
-      <Field label="Mockup caption">
+      <PresentationField label="Mockup caption">
         <Input
           value={payload.mockupCaption}
           onChange={event => onChange({ ...payload, mockupCaption: event.target.value })}
           placeholder="Kick off summer"
         />
-      </Field>
-      <Field label="Mockup note">
+      </PresentationField>
+      <PresentationField label="Mockup note">
         <Textarea
           value={payload.mockupNote}
           onChange={event => onChange({ ...payload, mockupNote: event.target.value })}
           placeholder="Optional note about the visual direction"
           className="min-h-24"
         />
-      </Field>
+      </PresentationField>
     </div>
   )
 }
@@ -614,21 +685,21 @@ function ProductPricingEditor({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Product name">
+        <PresentationField label="Product name">
           <Input
             value={payload.productName}
             onChange={event => onChange({ ...payload, productName: event.target.value })}
             placeholder="Beach towel"
           />
-        </Field>
-        <Field label="Pricing title">
+        </PresentationField>
+        <PresentationField label="Pricing title">
           <Input
             value={payload.pricingTitle}
             onChange={event => onChange({ ...payload, pricingTitle: event.target.value })}
             placeholder="Indicative pricing"
           />
-        </Field>
-        <Field label="Pricing columns (comma separated)">
+        </PresentationField>
+        <PresentationField label="Pricing columns (comma separated)">
           <Input
             value={payload.pricingColumns.join(', ')}
             onChange={event =>
@@ -643,22 +714,22 @@ function ProductPricingEditor({
             }
             placeholder="10,000, 20,000"
           />
-        </Field>
-        <Field label="Lead time">
+        </PresentationField>
+        <PresentationField label="Lead time">
           <Input
             value={payload.leadTime}
             onChange={event => onChange({ ...payload, leadTime: event.target.value })}
             placeholder="Lead time details"
           />
-        </Field>
+        </PresentationField>
         <div className="md:col-span-2">
-          <Field label="Customisation options (one per line)">
+          <PresentationField label="Customisation options (one per line)">
             <Textarea
               value={payload.customisationOptions.join('\n')}
               onChange={event => onChange({ ...payload, customisationOptions: splitLines(event.target.value) })}
               placeholder="Thread colours"
             />
-          </Field>
+          </PresentationField>
         </div>
       </div>
 
@@ -674,13 +745,13 @@ function ProductPricingEditor({
         {payload.pricingRows.map((row, index) => (
           <div key={index} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label="Row label">
+              <PresentationField label="Row label">
                 <Input
                   value={row.label}
                   onChange={event => updateRow(index, { ...row, label: event.target.value })}
                   placeholder="Recommended option"
                 />
-              </Field>
+              </PresentationField>
               <div className="flex items-end justify-end">
                 <Button variant="secondary" size="sm" onClick={() => removeRow(index)}>
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -688,17 +759,17 @@ function ProductPricingEditor({
                 </Button>
               </div>
               <div className="md:col-span-2">
-                <Field label="Row details (one per line)">
+                <PresentationField label="Row details (one per line)">
                   <Textarea
                     value={row.details.join('\n')}
                     onChange={event => updateRow(index, { ...row, details: splitLines(event.target.value) })}
                     className="min-h-24"
                     placeholder="Terry both sides"
                   />
-                </Field>
+                </PresentationField>
               </div>
               {payload.pricingColumns.map((column, valueIndex) => (
-                <Field key={`${column}-${valueIndex}`} label={column || `Value ${valueIndex + 1}`}>
+                <PresentationField key={`${column}-${valueIndex}`} label={column || `Value ${valueIndex + 1}`}>
                   <Input
                     value={row.values[valueIndex] || ''}
                     onChange={event =>
@@ -711,7 +782,7 @@ function ProductPricingEditor({
                     }
                     placeholder="$0.00"
                   />
-                </Field>
+                </PresentationField>
               ))}
             </div>
           </div>
@@ -719,47 +790,47 @@ function ProductPricingEditor({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Recommendation title">
+        <PresentationField label="Recommendation title">
           <Input
             value={payload.recommendationTitle}
             onChange={event => onChange({ ...payload, recommendationTitle: event.target.value })}
             placeholder="Our recommendation"
           />
-        </Field>
-        <Field label="Retail note">
+        </PresentationField>
+        <PresentationField label="Retail note">
           <Input
             value={payload.retailNote}
             onChange={event => onChange({ ...payload, retailNote: event.target.value })}
             placeholder="Optional retail context"
           />
-        </Field>
+        </PresentationField>
         <div className="md:col-span-2">
-          <Field label="Recommendation body">
+          <PresentationField label="Recommendation body">
             <Textarea
               value={payload.recommendationBody}
               onChange={event => onChange({ ...payload, recommendationBody: event.target.value })}
               placeholder="Why this recommendation is commercially strongest"
             />
-          </Field>
+          </PresentationField>
         </div>
         <div className="md:col-span-2">
-          <Field label="Pricing disclaimer">
+          <PresentationField label="Pricing disclaimer">
             <Textarea
               value={payload.pricingDisclaimer}
               onChange={event => onChange({ ...payload, pricingDisclaimer: event.target.value })}
               placeholder="Pricing disclaimer"
             />
-          </Field>
+          </PresentationField>
         </div>
         <div className="md:col-span-2">
-          <Field label="Certifications (one per line)">
+          <PresentationField label="Certifications (one per line)">
             <Textarea
               value={payload.certifications.join('\n')}
               onChange={event => onChange({ ...payload, certifications: splitLines(event.target.value) })}
               className="min-h-24"
               placeholder="SMETA"
             />
-          </Field>
+          </PresentationField>
         </div>
       </div>
     </div>
@@ -797,21 +868,21 @@ function ProductPackagingEditor({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Product name">
+        <PresentationField label="Product name">
           <Input
             value={payload.productName}
             onChange={event => onChange({ ...payload, productName: event.target.value })}
             placeholder="Beach ball"
           />
-        </Field>
+        </PresentationField>
         <div className="md:col-span-2">
-          <Field label="Intro">
+          <PresentationField label="Intro">
             <Textarea
               value={payload.intro}
               onChange={event => onChange({ ...payload, intro: event.target.value })}
               placeholder="Introduce the packaging story"
             />
-          </Field>
+          </PresentationField>
         </div>
       </div>
 
@@ -826,21 +897,21 @@ function ProductPackagingEditor({
 
         {payload.packagingIdeas.map((idea, index) => (
           <div key={index} className="grid gap-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 md:grid-cols-[1fr_1fr_auto]">
-            <Field label="Idea title">
+            <PresentationField label="Idea title">
               <Input
                 value={idea.title}
                 onChange={event => updateIdea(index, { ...idea, title: event.target.value })}
                 placeholder="rPET drawstring bag"
               />
-            </Field>
-            <Field label="Idea body">
+            </PresentationField>
+            <PresentationField label="Idea body">
               <Textarea
                 value={idea.body}
                 onChange={event => updateIdea(index, { ...idea, body: event.target.value })}
                 className="min-h-24"
                 placeholder="How this idea helps the pitch"
               />
-            </Field>
+            </PresentationField>
             <div className="flex items-end">
               <Button variant="secondary" size="sm" onClick={() => removeIdea(index)}>
                 <Trash2 className="h-4 w-4" />
@@ -850,14 +921,14 @@ function ProductPackagingEditor({
         ))}
       </div>
 
-      <Field label="Footer note">
+      <PresentationField label="Footer note">
         <Textarea
           value={payload.footerNote}
           onChange={event => onChange({ ...payload, footerNote: event.target.value })}
           placeholder="Optional note beneath the packaging ideas"
           className="min-h-24"
         />
-      </Field>
+      </PresentationField>
     </div>
   )
 }
@@ -871,28 +942,28 @@ function SupportingIdeaEditor({
 }) {
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <Field label="Eyebrow">
+      <PresentationField label="Eyebrow">
         <Input
           value={payload.eyebrow}
           onChange={event => onChange({ ...payload, eyebrow: event.target.value })}
           placeholder="Food for thought"
         />
-      </Field>
-      <Field label="Headline">
+      </PresentationField>
+      <PresentationField label="Headline">
         <Input
           value={payload.headline}
           onChange={event => onChange({ ...payload, headline: event.target.value })}
           placeholder="Layer in a utility idea"
         />
-      </Field>
+      </PresentationField>
       <div className="md:col-span-2">
-        <Field label="Body">
+        <PresentationField label="Body">
           <Textarea
             value={payload.body}
             onChange={event => onChange({ ...payload, body: event.target.value })}
             placeholder="Explain the supporting concept"
           />
-        </Field>
+        </PresentationField>
       </div>
     </div>
   )
@@ -907,44 +978,29 @@ function CommercialTermsEditor({
 }) {
   return (
     <div className="space-y-4">
-      <Field label="Shipping terms">
+      <PresentationField label="Shipping terms">
         <Textarea
           value={payload.shippingTerms}
           onChange={event => onChange({ ...payload, shippingTerms: event.target.value })}
           placeholder="Shipping terms"
         />
-      </Field>
-      <Field label="Payment terms">
+      </PresentationField>
+      <PresentationField label="Payment terms">
         <Textarea
           value={payload.paymentTerms}
           onChange={event => onChange({ ...payload, paymentTerms: event.target.value })}
           placeholder="Payment terms"
         />
-      </Field>
-      <Field label="Final disclaimer">
+      </PresentationField>
+      <PresentationField label="Final disclaimer">
         <Textarea
           value={payload.disclaimer}
           onChange={event => onChange({ ...payload, disclaimer: event.target.value })}
           placeholder="Additional commercial disclaimer"
           className="min-h-24"
         />
-      </Field>
+      </PresentationField>
     </div>
-  )
-}
-
-function Field({
-  label,
-  children,
-}: {
-  label: string
-  children: ReactNode
-}) {
-  return (
-    <label className="block space-y-2">
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      {children}
-    </label>
   )
 }
 
@@ -964,4 +1020,19 @@ function splitCommaList(value: string) {
 
 function resizeValues(values: string[], length: number) {
   return Array.from({ length }, (_, index) => values[index] || '')
+}
+
+function buildPresentationExportTitle(presentation: Pick<PresentationDetail, 'clientBrand' | 'proposalTitle' | 'seasonLabel'>) {
+  const parts = [
+    presentation.clientBrand.trim(),
+    presentation.proposalTitle.trim(),
+    presentation.seasonLabel.trim(),
+  ].filter(Boolean)
+
+  const baseName = (parts.length > 0 ? parts.join(' - ') : 'presentation')
+    .replace(/[\\/:*?"<>|]+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return `${baseName || 'presentation'}.pdf`
 }

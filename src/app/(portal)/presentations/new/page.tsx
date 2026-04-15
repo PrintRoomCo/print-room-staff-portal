@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Header } from '@/components/image-generator/header'
+import { PresentationField } from '@/components/presentations/presentation-field'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -73,58 +74,52 @@ export default function NewPresentationPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Proposal setup</CardTitle>
+          <CardTitle className="text-lg">Proposal details</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-foreground">Client name</span>
+          <PresentationField label="Client name">
             <Input
               value={form.clientName}
               onChange={event => setForm(current => ({ ...current, clientName: event.target.value }))}
               placeholder="Four Square"
             />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-foreground">Client brand</span>
+          </PresentationField>
+          <PresentationField label="Client brand">
             <Input
               value={form.clientBrand}
               onChange={event => setForm(current => ({ ...current, clientBrand: event.target.value }))}
               placeholder="Four Square"
             />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-foreground">Proposal title</span>
+          </PresentationField>
+          <PresentationField label="Proposal title">
             <Input
               value={form.proposalTitle}
               onChange={event => setForm(current => ({ ...current, proposalTitle: event.target.value }))}
               placeholder="Proposed product range"
             />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-foreground">Season label</span>
+          </PresentationField>
+          <PresentationField label="Season label">
             <Input
               value={form.seasonLabel}
               onChange={event => setForm(current => ({ ...current, seasonLabel: event.target.value }))}
               placeholder="Summer 2026/27"
             />
-          </label>
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-foreground">Cover date</span>
+          </PresentationField>
+          <PresentationField label="Cover date">
             <Input
               value={form.coverDateLabel}
               onChange={event => setForm(current => ({ ...current, coverDateLabel: event.target.value }))}
               placeholder="April 2026"
             />
-          </label>
+          </PresentationField>
           <div className="md:col-span-2">
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-foreground">Internal notes</span>
+            <PresentationField label="Internal notes">
               <Textarea
                 value={form.notes}
                 onChange={event => setForm(current => ({ ...current, notes: event.target.value }))}
                 placeholder="Optional brief notes for the proposal"
               />
-            </label>
+            </PresentationField>
           </div>
         </CardContent>
       </Card>
