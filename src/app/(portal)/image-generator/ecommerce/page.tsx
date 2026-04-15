@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Header } from '@/components/image-generator/header'
 import { CostEstimator } from '@/components/image-generator/cost-estimator'
 import { JobProgress } from '@/components/image-generator/job-progress'
@@ -45,6 +46,7 @@ const AVAILABLE_TYPES: { value: EcommerceImageType; label: string; description: 
 ]
 
 export default function EcommercePage() {
+  const { user } = useAuth()
   const [mode, setMode] = useState<EcommerceGenerationMode>('separate-products')
   const [selectedTypes, setSelectedTypes] = useState<Set<EcommerceImageType>>(new Set(['lifestyle', 'white-background']))
   const [prompt, setPrompt] = useState('')
@@ -61,11 +63,13 @@ export default function EcommercePage() {
   useEffect(() => { uploadsRef.current = uploads }, [uploads])
 
   useEffect(() => {
-    fetch('/api/image-generator/jobs?jobType=ecommerce&limit=10')
+    const params = new URLSearchParams({ jobType: 'ecommerce', limit: '10' })
+    if (user?.id) params.set('userId', user.id)
+    fetch(`/api/image-generator/jobs?${params}`)
       .then(res => res.json())
       .then(data => { setRecentJobs(Array.isArray(data) ? data : []); setLoading(false) })
       .catch(() => setLoading(false))
-  }, [])
+  }, [user?.id])
 
   useEffect(() => {
     return () => { uploadsRef.current.forEach(upload => URL.revokeObjectURL(upload.previewUrl)) }
@@ -79,7 +83,9 @@ export default function EcommercePage() {
       setActiveJob(job)
       if (job.status === 'completed' || job.status === 'failed') {
         clearInterval(interval)
-        fetch('/api/image-generator/jobs?jobType=ecommerce&limit=10')
+        const refreshParams = new URLSearchParams({ jobType: 'ecommerce', limit: '10' })
+        if (user?.id) refreshParams.set('userId', user.id)
+        fetch(`/api/image-generator/jobs?${refreshParams}`)
           .then(res => res.json())
           .then(data => setRecentJobs(Array.isArray(data) ? data : []))
       }
@@ -223,7 +229,7 @@ export default function EcommercePage() {
 
             <button
               type="button"
-              className={`mt-6 flex min-h-48 w-full flex-col items-center justify-center rounded-xl border border-dashed px-6 text-center transition-colors ${isDragging ? 'border-primary bg-primary/5' : 'border-border bg-muted/40 hover:bg-muted/70'}`}
+              className={`mt-6 flex min-h-48 w-full flex-col items-center justify-center rounded-2xl border border-dashed px-6 text-center transition-all duration-300 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${isDragging ? 'border-[hsl(var(--pr-blue))] bg-[hsl(var(--pr-blue))]/5' : 'border-border bg-muted/40 hover:bg-gray-50'}`}
               onClick={() => inputRef.current?.click()}
               onDragOver={event => { event.preventDefault(); setIsDragging(true) }}
               onDragLeave={() => setIsDragging(false)}
@@ -234,7 +240,7 @@ export default function EcommercePage() {
               <p className="mt-4 text-xs text-muted-foreground">Best results come from clear, well-lit product photos.</p>
             </button>
 
-            <input ref={inputRef} type="file" accept={ACCEPTED_ECOMMERCE_MIME_TYPES.join(',')} multiple className="hidden" onChange={event => { addFiles(event.target.files); event.target.value = '' }} />
+            <input ref={inputRef} type="file" accept={ACCEPTED_ECOMMERCE_MIME_TYPES.join(',')} multiple className="hidden" title="Upload product images" onChange={event => { addFiles(event.target.files); event.target.value = '' }} />
 
             {uploads.length > 0 && (
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -280,7 +286,7 @@ export default function EcommercePage() {
             <div className="space-y-3">
               {AVAILABLE_TYPES.map(type => (
                 <label key={type.value} className="flex items-start gap-2 text-sm">
-                  <input type="checkbox" checked={selectedTypes.has(type.value)} onChange={event => { const next = new Set(selectedTypes); if (event.target.checked) next.add(type.value); else next.delete(type.value); setSelectedTypes(next) }} className="mt-0.5 h-4 w-4 rounded border-input" />
+                  <input type="checkbox" checked={selectedTypes.has(type.value)} onChange={event => { const next = new Set(selectedTypes); if (event.target.checked) next.add(type.value); else next.delete(type.value); setSelectedTypes(next) }} className="mt-0.5 h-4 w-4 rounded border-input accent-[rgb(var(--color-brand-blue))]" />
                   <div><span className="font-medium">{type.label}</span><p className="text-xs text-muted-foreground">{type.description}</p></div>
                 </label>
               ))}

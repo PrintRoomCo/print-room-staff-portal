@@ -9,6 +9,7 @@ import { getEcommerceJobSummary, isEcommerceGenerationConfig } from '@/types/ima
 interface JobListProps {
   jobs: GenerationJob[]
   basePath?: string
+  showCreator?: boolean
 }
 
 const STATUS_VARIANT: Record<string, 'warning' | 'info' | 'success' | 'destructive'> = {
@@ -24,7 +25,7 @@ const TYPE_LABELS: Record<string, string> = {
   techpack: 'Tech Pack',
 }
 
-export function JobList({ jobs, basePath }: JobListProps) {
+export function JobList({ jobs, basePath, showCreator }: JobListProps) {
   if (jobs.length === 0) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -42,6 +43,7 @@ export function JobList({ jobs, basePath }: JobListProps) {
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">Inputs</th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">Progress</th>
+            {showCreator && <th className="px-4 py-3 text-left font-medium text-muted-foreground">Created By</th>}
             <th className="px-4 py-3 text-left font-medium text-muted-foreground">Created</th>
           </tr>
         </thead>
@@ -71,6 +73,11 @@ export function JobList({ jobs, basePath }: JobListProps) {
                 <td className="px-4 py-3 text-muted-foreground">
                   {job.progress.completed}/{job.progress.total}
                 </td>
+                {showCreator && (
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {job.user_display_name || job.user_email || '\u2014'}
+                  </td>
+                )}
                 <td className="px-4 py-3 text-muted-foreground">
                   {new Date(job.created_at).toLocaleDateString()} {new Date(job.created_at).toLocaleTimeString()}
                 </td>

@@ -13,21 +13,19 @@
   <![endif]-->
   <style>
   /* Reset */
-  body { margin:0; padding:0; background-color:#f5f2ed; font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#1f2933; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+  body { margin:0; padding:0; background-color:#ffffff; font-family:'DM Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#1f2933; -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
   img { border:0; line-height:100%; outline:none; text-decoration:none; -ms-interpolation-mode:bicubic; }
   table { border-collapse:collapse !important; }
 
   /* Layout */
-  .wrapper { width:100%; background-color:#f5f2ed; padding:40px 0; }
+  .wrapper { width:100%; background-color:#ffffff; padding:40px 0; }
   .container { max-width:600px; margin:0 auto; padding:0 16px; }
 
   /* Card */
-  .card { background-color:#f8faf4; border-radius:16px; border:2px solid #4B4D72; box-shadow:0 12px 24px rgba(75,77,114,0.12); overflow:hidden; }
+  .card { background-color:#f8faf4; border-radius:16px; border:1px solid #e5e7eb; box-shadow:0 12px 24px rgba(75,77,114,0.12); overflow:hidden; }
 
   /* Header */
-  .card-header { padding:28px 32px; background-color:#4B4D72; text-align:center; }
-  .card-header-title { margin:0; font-size:20px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#F1FFA5; }
-  .card-header-subtitle { margin:6px 0 0; font-size:12px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; color:rgba(255,255,255,0.7); }
+  .card-header { padding:24px 32px; background-color:#f8faf4; text-align:center; border-bottom:1px solid #e5e7eb; }
 
   /* Body */
   .card-body { padding:32px 32px 28px; }
@@ -57,10 +55,9 @@
 
   /* Dark mode overrides — force light palette in dark email clients */
   @media (prefers-color-scheme: dark) {
-    body { background-color:#f5f2ed !important; }
-    .card { background-color:#f8faf4 !important; border-color:#4B4D72 !important; }
-    .card-header { background-color:#4B4D72 !important; }
-    .card-header-title { color:#F1FFA5 !important; }
+    body { background-color:#ffffff !important; }
+    .card { background-color:#f8faf4 !important; border-color:#e5e7eb !important; }
+    .card-header { background-color:#f8faf4 !important; }
     h1 { color:#111827 !important; }
     p { color:#374151 !important; }
     .accent-box { background-color:#F1FFA5 !important; }
@@ -84,8 +81,7 @@
     <div class="container">
       <div class="card">
         <div class="card-header">
-          <div class="card-header-title">The Print Room</div>
-          <div class="card-header-subtitle">Staff Portal</div>
+          <img src="https://staff.theprintroom.nz/print-room-logo.png" alt="The Print Room" width="150" style="width:150px;height:auto;display:block;margin:0 auto;" />
         </div>
         <div class="card-body">
           

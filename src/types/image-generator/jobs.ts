@@ -29,6 +29,10 @@ export interface GenerationJob {
   results: PipelineResult[]
   error_message?: string
   source: string
+  user_id?: string
+  user_email?: string
+  user_display_name?: string
+  source_portal?: string
   created_at: string
   updated_at: string
   started_at?: string
