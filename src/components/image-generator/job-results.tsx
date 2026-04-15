@@ -16,7 +16,33 @@ export function JobResults({ results }: JobResultsProps) {
     <div className="space-y-6">
       {results.map(result => (
         <Card key={result.itemId} className="p-4">
-          <h3 className="font-medium mb-3">{result.itemName}</h3>
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h3 className="font-medium text-foreground">{result.itemName}</h3>
+              {result.briefSummary && (
+                <p className="mt-1 text-sm text-muted-foreground">{result.briefSummary}</p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {result.workflowType && (
+                <span className="rounded-full border border-[rgb(var(--color-brand-blue))]/15 bg-[rgb(var(--color-brand-blue))]/10 px-2.5 py-1 text-xs font-medium text-[rgb(var(--color-brand-blue))]">
+                  {result.workflowType === 'proposal' ? 'Proposal visuals' : 'Web assets'}
+                </span>
+              )}
+              {result.destinationTags?.map(tag => (
+                <span
+                  key={tag}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                    tag === 'proposal'
+                      ? 'border border-[rgb(var(--color-brand-blue))]/15 bg-[rgb(var(--color-brand-yellow))] text-[rgb(var(--color-brand-blue))]'
+                      : 'border border-cyan-200 bg-cyan-50 text-cyan-800'
+                  }`}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          </div>
 
           {result.sourceImages && result.sourceImages.length > 0 && (
             <div className="mb-4">
@@ -67,8 +93,33 @@ export function JobResults({ results }: JobResultsProps) {
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <div className="p-2 text-xs text-muted-foreground text-center capitalize">
-                  {item.type.replace('-', ' ')}
+                <div className="space-y-2 p-3">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium capitalize text-foreground">
+                      {item.type.replace('-', ' ')}
+                    </span>
+                    {item.assetStatus && (
+                      <span className="rounded-full border border-gray-200 bg-white px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                        {item.assetStatus}
+                      </span>
+                    )}
+                  </div>
+                  {item.destinationTags && item.destinationTags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {item.destinationTags.map(tag => (
+                        <span
+                          key={tag}
+                          className={`rounded-full px-2 py-1 text-[11px] font-medium ${
+                            tag === 'proposal'
+                              ? 'bg-[rgb(var(--color-brand-yellow))] text-[rgb(var(--color-brand-blue))]'
+                              : 'bg-cyan-50 text-cyan-800'
+                          }`}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </Card>
             ))}

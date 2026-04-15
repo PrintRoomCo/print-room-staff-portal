@@ -14,6 +14,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { PresentationField } from '@/components/presentations/presentation-field'
+import { PresentationAssetPicker } from '@/components/presentations/presentation-asset-picker'
 import { PresentationPreview } from '@/components/presentations/presentation-preview'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,9 +22,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { createBlankSection, reindexSections } from '@/lib/presentations/schema'
+import type { GeneratedImageAsset } from '@/types/image-generator/assets'
 import type {
   CommercialTermsPayload,
   PackagingIdea,
+  PresentationAssetReference,
   PresentationDetail,
   PresentationSection,
   PresentationSectionKind,
@@ -42,6 +45,18 @@ const STATUS_VARIANT: Record<PresentationDetail['status'], 'gray' | 'info' | 'su
   draft: 'gray',
   ready: 'success',
   archived: 'info',
+}
+
+function toPresentationAssetReference(asset: GeneratedImageAsset): PresentationAssetReference {
+  return {
+    assetId: asset.id,
+    label: asset.productLabel,
+    type: asset.assetType,
+    url: asset.storageUrl,
+    workflowType: asset.workflowType,
+    status: asset.status,
+    briefSummary: asset.briefSummary,
+  }
 }
 
 export function PresentationEditor({ presentationId }: PresentationEditorProps) {
@@ -609,47 +624,171 @@ function ProductStoryEditor({
   payload: ProductStoryPayload
   onChange: (payload: ProductStoryPayload) => void
 }) {
+  const [pickerTarget, setPickerTarget] = useState<'featured' | 'supporting' | null>(null)
+  const selectedAssetIds = [
+    payload.featuredAsset?.assetId,
+    ...(payload.supportingAssets || []).map(asset => asset.assetId),
+  ].filter((value): value is string => Boolean(value))
+
+  function handleAssetSelect(asset: GeneratedImageAsset) {
+    const nextAsset = toPresentationAssetReference(asset)
+
+    if (pickerTarget === 'featured') {
+      onChange({ ...payload, featuredAsset: nextAsset })
+      return
+    }
+
+    if (pickerTarget === 'supporting') {
+      const alreadyAdded = (payload.supportingAssets || []).some(existing => existing.assetId === nextAsset.assetId)
+      if (alreadyAdded) return
+
+      onChange({
+        ...payload,
+        supportingAssets: [...(payload.supportingAssets || []), nextAsset].slice(0, 3),
+      })
+    }
+  }
+
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <PresentationField label="Product name">
-        <Input
-          value={payload.productName}
-          onChange={event => onChange({ ...payload, productName: event.target.value })}
-          placeholder="Beach towel"
-        />
-      </PresentationField>
-      <PresentationField label="Tagline">
-        <Input
-          value={payload.tagline}
-          onChange={event => onChange({ ...payload, tagline: event.target.value })}
-          placeholder="Dry off in style"
-        />
-      </PresentationField>
-      <div className="md:col-span-2">
-        <PresentationField label="Story copy">
+    <>
+      <div className="grid gap-4 md:grid-cols-2">
+        <PresentationField label="Product name">
+          <Input
+            value={payload.productName}
+            onChange={event => onChange({ ...payload, productName: event.target.value })}
+            placeholder="Beach towel"
+          />
+        </PresentationField>
+        <PresentationField label="Tagline">
+          <Input
+            value={payload.tagline}
+            onChange={event => onChange({ ...payload, tagline: event.target.value })}
+            placeholder="Dry off in style"
+          />
+        </PresentationField>
+        <div className="md:col-span-2">
+          <PresentationField label="Story copy">
+            <Textarea
+              value={payload.storyCopy}
+              onChange={event => onChange({ ...payload, storyCopy: event.target.value })}
+              placeholder="Write the narrative hook for this product"
+            />
+          </PresentationField>
+        </div>
+        <PresentationField label="Mockup caption">
+          <Input
+            value={payload.mockupCaption}
+            onChange={event => onChange({ ...payload, mockupCaption: event.target.value })}
+            placeholder="Kick off summer"
+          />
+        </PresentationField>
+        <PresentationField label="Mockup note">
           <Textarea
-            value={payload.storyCopy}
-            onChange={event => onChange({ ...payload, storyCopy: event.target.value })}
-            placeholder="Write the narrative hook for this product"
+            value={payload.mockupNote}
+            onChange={event => onChange({ ...payload, mockupNote: event.target.value })}
+            placeholder="Optional note about the visual direction"
+            className="min-h-24"
           />
         </PresentationField>
       </div>
-      <PresentationField label="Mockup caption">
-        <Input
-          value={payload.mockupCaption}
-          onChange={event => onChange({ ...payload, mockupCaption: event.target.value })}
-          placeholder="Kick off summer"
-        />
-      </PresentationField>
-      <PresentationField label="Mockup note">
-        <Textarea
-          value={payload.mockupNote}
-          onChange={event => onChange({ ...payload, mockupNote: event.target.value })}
-          placeholder="Optional note about the visual direction"
-          className="min-h-24"
-        />
-      </PresentationField>
-    </div>
+
+      <div className="mt-5 space-y-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">Proposal imagery</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Attach generated assets from the image library so this section renders real visuals in preview and export.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget('featured')}>
+              Choose featured asset
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={() => setPickerTarget('supporting')}>
+              Add supporting asset
+            </Button>
+          </div>
+        </div>
+
+        {payload.featuredAsset ? (
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+            <div className="aspect-[4/3] bg-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={payload.featuredAsset.url} alt={payload.featuredAsset.label} className="h-full w-full object-cover" />
+            </div>
+            <div className="flex flex-wrap items-start justify-between gap-3 p-4">
+              <div>
+                <p className="text-sm font-medium text-foreground">{payload.featuredAsset.label}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {payload.featuredAsset.briefSummary || payload.featuredAsset.type}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onChange({ ...payload, featuredAsset: null })}
+              >
+                Remove
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-6 text-sm text-muted-foreground">
+            No featured asset selected yet.
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-medium text-foreground">Supporting assets</p>
+            <Badge variant="gray">{(payload.supportingAssets || []).length}/3</Badge>
+          </div>
+
+          {(payload.supportingAssets || []).length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-4 py-5 text-sm text-muted-foreground">
+              Add up to three supporting visuals to reinforce the proposal story.
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-3">
+              {(payload.supportingAssets || []).map(asset => (
+                <div key={asset.assetId} className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                  <div className="aspect-[4/3] bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={asset.url} alt={asset.label} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="space-y-2 p-3">
+                    <p className="text-sm font-medium text-foreground">{asset.label}</p>
+                    <p className="text-xs text-muted-foreground">{asset.briefSummary || asset.type}</p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        onChange({
+                          ...payload,
+                          supportingAssets: (payload.supportingAssets || []).filter(existing => existing.assetId !== asset.assetId),
+                        })
+                      }
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <PresentationAssetPicker
+        open={pickerTarget !== null}
+        onClose={() => setPickerTarget(null)}
+        onSelectAsset={handleAssetSelect}
+        selectedAssetIds={selectedAssetIds}
+        defaultWorkflow="proposal"
+      />
+    </>
   )
 }
 

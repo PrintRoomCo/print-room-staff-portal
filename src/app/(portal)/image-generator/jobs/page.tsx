@@ -67,7 +67,7 @@ export default function AllJobsPage() {
         >
           <option value="all">All Types</option>
           <option value="view">Design Tool Views</option>
-          <option value="ecommerce">Ecommerce</option>
+          <option value="ecommerce">Proposal & Web Assets</option>
           <option value="techpack">Tech Pack</option>
         </select>
 

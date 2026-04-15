@@ -214,7 +214,7 @@ export default function QuoteDetailPage() {
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button variant="accent" onClick={() => router.push('/quote-tool')}>
+        <Button variant="accent" onClick={() => router.push('/quote-tool/new')}>
           <FileText className="w-4 h-4 mr-2" />
           New Quote
         </Button>

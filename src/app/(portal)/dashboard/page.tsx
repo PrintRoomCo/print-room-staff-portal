@@ -25,7 +25,7 @@ const TOOLS: ToolCard[] = [
   {
     id: 'image-generator',
     title: 'Image Generator',
-    description: 'AI-powered product image generation for design views, ecommerce, and tech packs.',
+    description: 'Create proposal visuals, web-ready assets, design views, and reusable marketing imagery.',
     href: '/image-generator',
     icon: Image,
     status: 'active',

@@ -1,6 +1,7 @@
 import type {
   CommercialTermsPayload,
   PackagingIdea,
+  PresentationAssetReference,
   PresentationCreateInput,
   PresentationDetail,
   PresentationSection,
@@ -79,6 +80,37 @@ function normalizePricingRows(value: unknown): PricingRow[] {
     .slice(0, 16)
 }
 
+function normalizePresentationAssetReference(value: unknown): PresentationAssetReference | null {
+  const record = asObject(value)
+  const assetId = toStringValue(record.assetId).trim()
+  const label = toStringValue(record.label).trim()
+  const type = toStringValue(record.type).trim()
+  const url = toStringValue(record.url).trim()
+
+  if (!assetId || !label || !type || !url) {
+    return null
+  }
+
+  return {
+    assetId,
+    label,
+    type,
+    url,
+    workflowType: toStringValue(record.workflowType).trim() || undefined,
+    status: toStringValue(record.status).trim() || undefined,
+    briefSummary: toStringValue(record.briefSummary).trim() || undefined,
+  }
+}
+
+function normalizePresentationAssetReferences(value: unknown, limit = 4): PresentationAssetReference[] {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .map(normalizePresentationAssetReference)
+    .filter((asset): asset is PresentationAssetReference => asset !== null)
+    .slice(0, limit)
+}
+
 export function isPresentationSectionKind(value: string): value is PresentationSectionKind {
   return PRESENTATION_SECTION_KINDS.includes(value as PresentationSectionKind)
 }
@@ -96,6 +128,8 @@ export function createEmptySectionPayload(kind: PresentationSectionKind): Presen
         storyCopy: '',
         mockupCaption: '',
         mockupNote: '',
+        featuredAsset: null,
+        supportingAssets: [],
       } satisfies ProductStoryPayload
     case 'product-pricing':
       return {
@@ -248,6 +282,8 @@ function normalizeSectionPayload(kind: PresentationSectionKind, value: unknown):
         storyCopy: toStringValue(record.storyCopy).trim(),
         mockupCaption: toStringValue(record.mockupCaption).trim(),
         mockupNote: toStringValue(record.mockupNote).trim(),
+        featuredAsset: normalizePresentationAssetReference(record.featuredAsset),
+        supportingAssets: normalizePresentationAssetReferences(record.supportingAssets),
       } satisfies ProductStoryPayload
     case 'product-pricing':
       return {

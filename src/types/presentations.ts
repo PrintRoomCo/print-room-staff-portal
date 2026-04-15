@@ -26,12 +26,24 @@ export interface PackagingIdea {
   body: string
 }
 
+export interface PresentationAssetReference {
+  assetId: string
+  label: string
+  type: string
+  url: string
+  workflowType?: string
+  status?: string
+  briefSummary?: string
+}
+
 export interface ProductStoryPayload {
   productName: string
   tagline: string
   storyCopy: string
   mockupCaption: string
   mockupNote: string
+  featuredAsset?: PresentationAssetReference | null
+  supportingAssets: PresentationAssetReference[]
 }
 
 export interface ProductPricingPayload {

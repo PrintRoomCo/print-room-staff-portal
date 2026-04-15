@@ -183,6 +183,9 @@ function ProductStorySlide({ section }: { section: PresentationSection }) {
   const payload = section.payload as ProductStoryPayload
   const paragraphs = splitParagraphs(payload.storyCopy || section.body)
   const columns = splitNarrativeColumns(paragraphs)
+  const supportingAssets = payload.supportingAssets?.slice(0, 3) ?? []
+  const featuredAsset = payload.featuredAsset || supportingAssets[0]
+  const thumbnailAssets = payload.featuredAsset ? supportingAssets : supportingAssets.slice(1)
 
   return (
     <div className="presentation-preview__inner grid h-full gap-4 overflow-hidden rounded-[24px] bg-[#FAF9F4] p-4 md:grid-cols-[1.06fr_0.94fr] md:p-5">
@@ -227,15 +230,45 @@ function ProductStorySlide({ section }: { section: PresentationSection }) {
           </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
-          {Array.from({ length: 3 }, (_, index) => (
-            <div
-              key={index}
-              className="rounded-[18px] border border-[#E4E7EF] bg-[#F8F9FC]"
-              style={{ height: index === 1 ? '7rem' : '5.75rem' }}
-            />
-          ))}
-        </div>
+        {featuredAsset ? (
+          <div className="space-y-3">
+            <div className="overflow-hidden rounded-[20px] border border-[#E4E7EF] bg-[#F8F9FC]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={featuredAsset.url}
+                alt={featuredAsset.label}
+                className="h-56 w-full object-cover"
+              />
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {thumbnailAssets.length > 0
+                ? thumbnailAssets.map(asset => (
+                    <div key={asset.assetId} className="overflow-hidden rounded-[18px] border border-[#E4E7EF] bg-[#F8F9FC]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={asset.url} alt={asset.label} className="h-24 w-full object-cover" />
+                    </div>
+                  ))
+                : Array.from({ length: 3 }, (_, index) => (
+                    <div
+                      key={index}
+                      className="rounded-[18px] border border-[#E4E7EF] bg-[#F8F9FC]"
+                      style={{ height: index === 1 ? '7rem' : '5.75rem' }}
+                    />
+                  ))}
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-3">
+            {Array.from({ length: 3 }, (_, index) => (
+              <div
+                key={index}
+                className="rounded-[18px] border border-[#E4E7EF] bg-[#F8F9FC]"
+                style={{ height: index === 1 ? '7rem' : '5.75rem' }}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

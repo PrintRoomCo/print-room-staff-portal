@@ -2,6 +2,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+}
+
 export interface PipelineSourceImage {
   id: string
   url: string
@@ -14,6 +19,11 @@ export interface PipelineGeneratedItem {
   replicateOutputUrl: string
   storageUrl: string
   recordId: string
+  assetId?: string
+  assetStatus?: string
+  workflowType?: string
+  presetKey?: string
+  destinationTags?: string[]
 }
 
 export interface PipelineResult {
@@ -24,6 +34,10 @@ export interface PipelineResult {
   sourceImages?: PipelineSourceImage[]
   prompt?: string
   mode?: string
+  workflowType?: string
+  presetKey?: string
+  briefSummary?: string
+  destinationTags?: string[]
 }
 
 function normalizePipelineSourceImage(value: unknown): PipelineSourceImage | null {
@@ -74,6 +88,11 @@ function normalizePipelineGeneratedItem(value: unknown): PipelineGeneratedItem |
     replicateOutputUrl,
     storageUrl,
     recordId,
+    assetId: typeof value.assetId === 'string' ? value.assetId : undefined,
+    assetStatus: typeof value.assetStatus === 'string' ? value.assetStatus : undefined,
+    workflowType: typeof value.workflowType === 'string' ? value.workflowType : undefined,
+    presetKey: typeof value.presetKey === 'string' ? value.presetKey : undefined,
+    destinationTags: toStringArray(value.destinationTags),
   }
 }
 
@@ -108,6 +127,10 @@ function normalizePipelineResult(value: unknown): PipelineResult | null {
     sourceImages: sourceImages && sourceImages.length > 0 ? sourceImages : undefined,
     prompt: typeof value.prompt === 'string' ? value.prompt : undefined,
     mode: typeof value.mode === 'string' ? value.mode : undefined,
+    workflowType: typeof value.workflowType === 'string' ? value.workflowType : undefined,
+    presetKey: typeof value.presetKey === 'string' ? value.presetKey : undefined,
+    briefSummary: typeof value.briefSummary === 'string' ? value.briefSummary : undefined,
+    destinationTags: toStringArray(value.destinationTags),
   }
 }
 

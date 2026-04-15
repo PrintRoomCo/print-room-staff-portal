@@ -56,6 +56,8 @@ export function createDefaultProposalSections(input: PresentationCreateInput): P
           'Position this as a summer essential with broad family appeal. Focus on comfort, portability, and how the product keeps the brand present during relaxed, memorable moments.',
         mockupCaption: 'Lifestyle mockup direction',
         mockupNote: 'Use this slide to anchor the hero imagery and set the tone before the specs page.',
+        featuredAsset: null,
+        supportingAssets: [],
       },
     },
     {
@@ -117,6 +119,8 @@ export function createDefaultProposalSections(input: PresentationCreateInput): P
           'Frame socks as a practical product with high repeat wear. Emphasise comfort, subtle branding, and how easily the product integrates into the customer’s day.',
         mockupCaption: 'Optional sock mockup',
         mockupNote: 'Use this section when mockups or styled product photography are available.',
+        featuredAsset: null,
+        supportingAssets: [],
       },
     },
     {
@@ -167,6 +171,8 @@ export function createDefaultProposalSections(input: PresentationCreateInput): P
           'Position the beach ball as a social, visible product that creates interaction around the brand. This is strongest when paired with packaging or activation ideas that extend use.',
         mockupCaption: 'Kick-off summer',
         mockupNote: 'Mockup for demonstrative purposes only.',
+        featuredAsset: null,
+        supportingAssets: [],
       },
     },
     {
@@ -263,6 +269,8 @@ export function createDefaultProposalSections(input: PresentationCreateInput): P
           'Use this product when the range needs a lighter-entry impulse item with strong thematic storytelling and easy gifting potential.',
         mockupCaption: 'Hangs with your mate',
         mockupNote: 'Mockup for demonstrative purposes only.',
+        featuredAsset: null,
+        supportingAssets: [],
       },
     },
     {

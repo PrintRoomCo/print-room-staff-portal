@@ -21,7 +21,7 @@ const STATUS_VARIANT: Record<string, 'warning' | 'info' | 'success' | 'destructi
 
 const TYPE_LABELS: Record<string, string> = {
   view: 'Design Tool Views',
-  ecommerce: 'Ecommerce',
+  ecommerce: 'Proposal & Web Assets',
   techpack: 'Tech Pack',
 }
 

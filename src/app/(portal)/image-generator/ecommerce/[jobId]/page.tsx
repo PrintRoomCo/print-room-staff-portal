@@ -40,12 +40,12 @@ export default function EcommerceJobDetailPage({ params }: { params: Promise<{ j
   return (
     <div>
       <Header
-        title="Ecommerce Job"
+        title="Proposal & Web Asset Job"
         description={`Job ${jobId.slice(0, 8)}...`}
         action={
           <Link href="/image-generator/ecommerce" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" />
-            Back to Ecommerce
+            Back to Assets
           </Link>
         }
       />

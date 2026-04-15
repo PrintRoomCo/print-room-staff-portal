@@ -91,8 +91,8 @@ export default function SavedQuotesPage() {
         title="Saved Quotes"
         description="View and manage quotes created for customers"
         action={
-          <Link href="/quote-tool">
-            <Button variant="accent">Create Quote</Button>
+          <Link href="/quote-tool/new">
+            <Button variant="accent">New Quote</Button>
           </Link>
         }
       />
@@ -106,8 +106,8 @@ export default function SavedQuotesPage() {
           <p className="text-muted-foreground text-sm mt-2 max-w-md">
             Create your first quote to get started. Quotes will appear here once saved.
           </p>
-          <Link href="/quote-tool" className="mt-6">
-            <Button variant="accent">Create Quote</Button>
+          <Link href="/quote-tool/new" className="mt-6">
+            <Button variant="accent">New Quote</Button>
           </Link>
         </div>
       ) : (
