@@ -33,7 +33,14 @@ export default async function ProductsPage({
   const isAdmin = staff?.role === 'admin' || staff?.role === 'super_admin'
   const perms = Array.isArray(staff?.permissions) ? staff!.permissions : []
   if (!isAdmin && !perms.includes('products') && !perms.includes('products:write')) {
-    redirect('/dashboard')
+    return (
+      <div className="max-w-lg mx-auto py-16 text-center">
+        <h1 className="text-xl font-semibold">Products is restricted</h1>
+        <p className="text-sm text-gray-500 mt-2">
+          Ask an admin to grant the <code>products</code> permission on your staff account.
+        </p>
+      </div>
+    )
   }
 
   const sp = await searchParams
