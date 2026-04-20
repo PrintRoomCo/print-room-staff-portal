@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ProductFilters } from './ProductFilters'
@@ -35,6 +35,7 @@ export function ProductList({ initial, brands, categories }: Props) {
   const [products, setProducts] = useState<ProductSummary[]>(initial.products)
   const [total, setTotal] = useState<number>(initial.total)
   const [loading, setLoading] = useState(false)
+  const didMount = useRef(false)
   const [, startTransition] = useTransition()
 
   const totalPages = useMemo(
@@ -59,7 +60,11 @@ export function ProductList({ initial, brands, categories }: Props) {
   useEffect(() => {
     const next = parseListSearchParams(searchParams)
     setFilters(next)
-    void fetchPage(next)
+    if (didMount.current) {
+      void fetchPage(next)
+    } else {
+      didMount.current = true
+    }
   }, [searchParams, fetchPage])
 
   function applyFilters(next: ProductListFilters) {
@@ -68,7 +73,6 @@ export function ProductList({ initial, brands, categories }: Props) {
     startTransition(() => {
       router.replace(`/products${sp ? `?${sp}` : ''}`, { scroll: false })
     })
-    void fetchPage(next)
   }
 
   function goToPage(page: number) {
