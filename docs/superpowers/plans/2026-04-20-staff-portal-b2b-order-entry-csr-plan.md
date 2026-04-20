@@ -775,7 +775,7 @@ curl -X POST http://localhost:3000/api/pricing/quote-line \
 - Rejects with 409 on unique-constraint collision.
 - 403 without perm.
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -807,7 +807,7 @@ export async function PATCH(
 }
 ```
 
-- [ ] **Step 2: cURL smoke + commit**
+- [x] **Step 2: cURL smoke + commit** — cURL smoke deferred to Task 22 E2E.
 
 ---
 
