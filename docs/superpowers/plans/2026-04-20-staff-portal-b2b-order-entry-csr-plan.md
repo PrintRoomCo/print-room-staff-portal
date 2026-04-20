@@ -588,7 +588,7 @@ npx tsc --noEmit
 **Files:**
 - Create: `src/lib/orders/server.ts`
 
-- [ ] **Step 1: Write** — exact mirror of [src/lib/products/server.ts:28-70](print-room-staff-portal/src/lib/products/server.ts#L28-L70), substituting `'orders'` / `'orders:write'` for the products keys:
+- [x] **Step 1: Write** — exact mirror of [src/lib/products/server.ts:28-70](print-room-staff-portal/src/lib/products/server.ts#L28-L70), substituting `'orders'` / `'orders:write'` for the products keys:
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -643,7 +643,7 @@ export async function requireOrdersStaffAccess() {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ---
 
