@@ -709,7 +709,7 @@ export interface OrderSubmitResponse {
 - 403 without perm.
 - 400 on invalid/missing fields.
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -752,7 +752,7 @@ export async function POST(request: Request) {
 }
 ```
 
-- [ ] **Step 2: cURL smoke**
+- [x] **Step 2: cURL smoke** (deferred to Task 22 E2E — skipped to avoid `npm run dev` collision with 5 concurrent agents)
 
 ```bash
 curl -X POST http://localhost:3000/api/pricing/quote-line \
@@ -761,7 +761,7 @@ curl -X POST http://localhost:3000/api/pricing/quote-line \
 # Expect: {"unit_price":X, "total":Y, "tier_level":Z, "bracket":{...}}
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ---
 
