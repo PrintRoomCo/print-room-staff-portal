@@ -818,7 +818,7 @@ export async function PATCH(
 
 **What it does:** 1) calls the `submit_b2b_order` RPC, 2) on success calls `pushProductionJob` from Monday helper, 3) writes back `quotes.monday_item_id` and `quote_items.monday_subitem_id`, 4) returns the combined response. If Monday push errors, returns with `monday_push_error` set — never throws from the HTTP handler's perspective.
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 import { getSupabaseAdmin } from '@/lib/supabase-server'
@@ -930,7 +930,7 @@ export async function retryMondayPush(orderId: string): Promise<{ monday_item_id
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ---
 
