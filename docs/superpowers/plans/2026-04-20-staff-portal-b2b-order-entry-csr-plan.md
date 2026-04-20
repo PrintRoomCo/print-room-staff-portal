@@ -1026,7 +1026,7 @@ export async function GET(request: Request) {
 - `DELETE` (cancel): rejects 409 if ANY line has a Monday subitem in `dispatched` status (requires checking `job_trackers` or a stored status on quote_items — v1 uses `variant_inventory_events` to detect `order_ship` presence). On accept: calls `release_quote_line(line_id, 'cancelled')` for each line, sets `orders.status = 'cancelled'`.
 - 403 without perm.
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -1106,7 +1106,7 @@ export async function DELETE(
 }
 ```
 
-- [ ] **Step 2: cURL smoke + commit**
+- [x] **Step 2: cURL smoke + commit**
 
 ---
 
@@ -1226,7 +1226,7 @@ export async function DELETE(
 - Calls `retryMondayPush(orderId)`. Returns `{ monday_item_id, error }`.
 - Idempotent — re-pushing an already-pushed order is a no-op (the helper skips existing item/subitems).
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -1245,7 +1245,7 @@ export async function POST(
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ---
 
