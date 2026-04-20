@@ -106,6 +106,8 @@ export function QuoteHistoryModal({ quote, onClose }: QuoteHistoryModalProps) {
     return null
   }
 
+  const quoteId = quote.id
+
   async function handleAddNote() {
     if (!noteBody.trim()) return
 
@@ -113,7 +115,7 @@ export function QuoteHistoryModal({ quote, onClose }: QuoteHistoryModalProps) {
     setError(null)
 
     try {
-      const response = await fetch(`/api/quote-builder/quotes/${quote.id}/history`, {
+      const response = await fetch(`/api/quote-builder/quotes/${quoteId}/history`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

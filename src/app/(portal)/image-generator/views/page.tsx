@@ -36,8 +36,10 @@ export default function ViewsPage() {
 
   useEffect(() => {
     if (!activeJob || !['pending', 'processing'].includes(activeJob.status)) return
+    const activeJobId = activeJob.id
+
     const interval = setInterval(async () => {
-      const res = await fetch(`/api/image-generator/jobs/${activeJob.id}`)
+      const res = await fetch(`/api/image-generator/jobs/${activeJobId}`)
       const job = await res.json()
       setActiveJob(job)
       if (job.status === 'completed' || job.status === 'failed') {
