@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
 import { TabNav, type TabDef } from './TabNav'
+import { DetailsTab } from './tabs/DetailsTab'
 import type { BrandRef, CategoryRef, ProductDetail } from '@/types/products'
 
 const TABS: TabDef[] = [
@@ -20,8 +21,12 @@ interface Props {
   categories: CategoryRef[]
 }
 
-export function ProductEditor({ product, brands: _brands, categories: _categories }: Props) {
+export function ProductEditor(props: Props) {
+  const router = useRouter()
   const [active, setActive] = useState<string>('details')
+  const [product, setProduct] = useState<ProductDetail>(props.product)
+  const [savingDetails, setSavingDetails] = useState(false)
+  const [detailsErrors, setDetailsErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const fromHash = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : ''
@@ -33,6 +38,35 @@ export function ProductEditor({ product, brands: _brands, categories: _categorie
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', `#${key}`)
     }
+  }
+
+  async function saveDetails(patch: Record<string, unknown>) {
+    setSavingDetails(true)
+    setDetailsErrors({})
+    try {
+      const res = await fetch(`/api/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(patch),
+      })
+      const json = await res.json()
+      if (!res.ok) {
+        setDetailsErrors(json.errors || { _root: json.error || 'Failed to save.' })
+        return
+      }
+      setProduct(json.product as ProductDetail)
+    } finally {
+      setSavingDetails(false)
+    }
+  }
+
+  async function deleteProduct() {
+    const res = await fetch(`/api/products/${product.id}`, { method: 'DELETE' })
+    if (!res.ok) {
+      window.alert('Failed to delete.')
+      return
+    }
+    router.push('/products')
   }
 
   return (
@@ -47,16 +81,21 @@ export function ProductEditor({ product, brands: _brands, categories: _categorie
             {product.is_active ? 'Active' : 'Inactive'} · platform: {product.platform}
           </p>
         </div>
-        <Button type="button" variant="ghost" size="sm">
-          (delete moved to Details tab)
-        </Button>
       </div>
 
       <TabNav tabs={TABS} active={active} onChange={changeTab} />
 
       <div>
         {active === 'details' && (
-          <p className="text-sm text-gray-500">Details form goes here (Task 15).</p>
+          <DetailsTab
+            product={product}
+            brands={props.brands}
+            categories={props.categories}
+            onSave={saveDetails}
+            onDelete={deleteProduct}
+            saving={savingDetails}
+            errors={detailsErrors}
+          />
         )}
         {active === 'swatches' && (
           <p className="text-sm text-gray-500">Swatches manager goes here (Task 17).</p>
