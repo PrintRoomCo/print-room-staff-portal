@@ -206,7 +206,7 @@ select get_unit_price(
 **Acceptance:**
 - Returns `'<customer_code>-000001'` on first call, `'...-000002'` on second.
 
-- [ ] **Step 1: Apply**
+- [x] **Step 1: Apply**
 
 `mcp__supabase__apply_migration` name `20260420_allocate_order_ref_fn`:
 
@@ -217,7 +217,7 @@ returns text language sql as $$
 $$;
 ```
 
-- [ ] **Step 2: Smoke test**
+- [x] **Step 2: Smoke test**
 
 ```sql
 select allocate_order_ref('BIK');
@@ -225,7 +225,7 @@ select allocate_order_ref('BIK');
 -- expect BIK-000001 then BIK-000002 (values monotonic; exact numbers depend on seq state).
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ---
 
