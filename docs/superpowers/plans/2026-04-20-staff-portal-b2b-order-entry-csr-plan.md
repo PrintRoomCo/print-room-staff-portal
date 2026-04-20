@@ -1444,20 +1444,20 @@ Note: the `NavSection.id` union already accepts `StaffPermission`, which now inc
 
 ## Task 22: End-to-end verification (spec §13)
 
-Manual run-through on dev. Each step sits behind a checkbox.
+**2026-04-21: DB/RPC paths verified via Supabase MCP.** A single transaction (`begin…rollback`) seeded org+b2b_account (tier 2)+variant+inventory, called `submit_b2b_order` / `adjust_quote_line_delta` / `release_quote_line` directly, and asserted 21 facts covering steps 1-3, 5-9 below. All 21 green; zero rows leaked after rollback. Steps 4 (browser submit via `/orders/new`), 6 (over-commit via UI banner), 8 (cancel via UI confirm), 10 (UX checks), and the Monday-push assertions in step 5 still require manual run-through once `MONDAY_API_TOKEN` is set and a user session is logged in.
 
-- [ ] **Step 1: Seed Bike Glendhu** — create an `organizations` row with `name='Bike Glendhu'`. Set `customer_code='BIK'` via the PATCH endpoint (Task 12). Create one `stores` row linked to that org.
+- [x] **Step 1: Seed Bike Glendhu** — create an `organizations` row with `name='Bike Glendhu'`. Set `customer_code='BIK'` via the PATCH endpoint (Task 12). Create one `stores` row linked to that org. _(DB-automated 2026-04-21 with `customer_code='BIK22'` marker; `stores` insert skipped since the RPC test path accepts a JSONB shipping_address.)_
 
-- [ ] **Step 2: Seed b2b_accounts manually** (since submit will auto-create if missing, but §13 wants tier_level=2):
+- [x] **Step 2: Seed b2b_accounts manually** (since submit will auto-create if missing, but §13 wants tier_level=2):
 
 ```sql
 insert into b2b_accounts (organization_id, tier_level, payment_terms, default_deposit_percent, platform, company_name, is_trusted)
   values ('<BIK>', 2, 'net_20', 0, 'b2b', 'Bike Glendhu', true);
 ```
 
-- [ ] **Step 3: Seed inventory** — use spec #1's `/inventory` UI to track a product, receive 10 units into Black/M.
+- [x] **Step 3: Seed inventory** — use spec #1's `/inventory` UI to track a product, receive 10 units into Black/M. _(DB-automated: inserted a `product_variants` row for AS Colour Box Tee 5030 Black/M + `variant_inventory` stock_qty=10, committed_qty=0; rolled back.)_
 
-- [ ] **Step 4: Submit the order** via `/orders/new`:
+- [ ] **Step 4: Submit the order** via `/orders/new`: _(UI-manual still required — DB-automated variant called `submit_b2b_order` directly with qty=5 on the stocked line; MTO Navy/L×50 and Navy/XL×50 lines not exercised.)_
   - Company: Bike Glendhu.
   - Ship-to: the seeded store.
   - Line A: the stocked product → Black/M × 5.
@@ -1465,7 +1465,7 @@ insert into b2b_accounts (organization_id, tier_level, payment_terms, default_de
   - Line C: same MTO product → Navy/XL × 50.
   - Terms: default net_20, deposit 0%, no required-by.
 
-- [ ] **Step 5: Assert** via `mcp__supabase__execute_sql`:
+- [x] **Step 5: Assert** via `mcp__supabase__execute_sql`: _(DB-automated — order_ref `BIK22-000006` matched `^BIK22-\d{6}$`, Tier-2 discounted unit_price = $13.53 (bracket $14.24 × 0.95), `variant_inventory.committed_qty` moved 0→5, `variant_inventory_events` row with `reason='order_commit' delta_committed=+5` confirmed, `orders.status='awaiting-production'`, `b2b_account` reused not auto-created. Monday-push assertions deferred pending `MONDAY_API_TOKEN`.)_
 
 ```sql
 select order_ref from quotes where idempotency_key = '<IDK>';
@@ -1490,14 +1490,14 @@ select monday_subitem_id from quote_items where quote_id = ... ;
 -- expect non-null for all 3 lines.
 ```
 
-- [ ] **Step 6: Over-commit test** — repeat the form, Black/M × 10 (only 5 available). Expect 409 banner "OUT_OF_STOCK", no new rows.
+- [x] **Step 6: Over-commit test** — repeat the form, Black/M × 10 (only 5 available). Expect 409 banner "OUT_OF_STOCK", no new rows. _(DB-automated — `submit_b2b_order` with qty=10 raised `P0001 OUT_OF_STOCK`, zero quote rows for the overcommit idempotency key, `committed_qty` stayed at 5. UI 409-banner rendering still requires browser verification.)_
 
 ```sql
 select count(*) from quotes where idempotency_key = '<NEW_IDK>';
 -- expect 0 (all writes rolled back).
 ```
 
-- [ ] **Step 7: Pre-ship edit** — on `/orders/<id>`, reduce line A qty 5 → 3.
+- [x] **Step 7: Pre-ship edit** — on `/orders/<id>`, reduce line A qty 5 → 3. _(DB-automated via `adjust_quote_line_delta(lineId, 5, 3)` — `committed_qty` 5→3, event row with `reason='order_release' delta_committed=-2` confirmed. UI PATCH endpoint still to be smoke-tested via browser.)_
 
 ```sql
 select committed_qty from variant_inventory where variant_id = '<BLACK_M_VARIANT>';
@@ -1509,7 +1509,7 @@ select reason, delta_committed from variant_inventory_events
 -- expect a row with reason='order_release', delta_committed=-2.
 ```
 
-- [ ] **Step 8: Cancel the order** — click Cancel on detail page, confirm.
+- [x] **Step 8: Cancel the order** — click Cancel on detail page, confirm. _(DB-automated via `release_quote_line(lineId, 'cancelled')` + direct `update orders set status='cancelled'` — `committed_qty` 3→0, status='cancelled'. UI confirm dialog + `DELETE /api/orders/[id]` shipped-line-block still need browser run.)_
 
 ```sql
 select status from orders where id = '<ORD>';
@@ -1519,14 +1519,14 @@ select committed_qty from variant_inventory where variant_id = '<BLACK_M_VARIANT
 -- expect 0 (released the remaining 3).
 ```
 
-- [ ] **Step 9: Idempotency** — POST `/api/orders` twice with the same `idempotency_key`. Second call returns same `order_ref`, no duplicate rows.
+- [x] **Step 9: Idempotency** — POST `/api/orders` twice with the same `idempotency_key`. Second call returns same `order_ref`, no duplicate rows. _(DB-automated — re-invoked `submit_b2b_order` with matching key; returned identical `quote_id` and `order_ref`; `count(quotes where idempotency_key=...) = 1`.)_
 
 ```sql
 select count(*) from quotes where idempotency_key = '<IDK>';
 -- expect 1 after both calls.
 ```
 
-- [ ] **Step 10: UX verification** (manual)
+- [ ] **Step 10: UX verification** (manual — browser required)
   - Non-permissioned staff: `/orders` redirects to `/dashboard`, `/api/orders` returns 403.
   - Tab flow from company → ship-to → each line (qty) → next line works.
   - Sticky summary recalculates on every keystroke.
