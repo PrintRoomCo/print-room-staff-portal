@@ -31,6 +31,7 @@ import {
   ChevronLeft,
   Package,
   Boxes,
+  ShoppingCart,
 } from 'lucide-react'
 
 interface NavItem {
@@ -80,6 +81,16 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'New Quote', href: '/quote-tool/new', icon: FilePlus },
       { label: 'Saved Quotes', href: '/quote-tool/quotes', icon: List },
       { label: 'Design Tool', href: '/quote-tool/design-tool', icon: Pencil },
+    ],
+  },
+  {
+    id: 'orders',
+    label: 'Orders',
+    icon: ShoppingCart,
+    permission: 'orders',
+    items: [
+      { label: 'All Orders', href: '/orders', icon: ShoppingCart },
+      { label: 'New Order', href: '/orders/new', icon: FilePlus },
     ],
   },
   {
