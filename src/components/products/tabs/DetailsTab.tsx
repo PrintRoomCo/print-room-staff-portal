@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { TagCheckboxGroup } from '../TagCheckboxGroup'
+import { ChannelControlRow } from '../ChannelControlRow'
+import { TagPicker } from '../TagPicker'
 import { GARMENT_FAMILIES } from '@/lib/products/garment-families'
-import { PRODUCT_TYPE_TAGS, type ProductTypeTag } from '@/lib/products/tags'
-import type { BrandRef, CategoryRef, ProductDetail } from '@/types/products'
+import type { BrandRef, CategoryRef, ChannelsMap, ProductDetail } from '@/types/products'
 
 interface Props {
   product: ProductDetail
@@ -15,14 +15,9 @@ interface Props {
   categories: CategoryRef[]
   onSave: (patch: Record<string, unknown>) => Promise<void>
   onDelete: () => Promise<void>
+  onChannelsChange: (next: ChannelsMap) => void
   saving: boolean
   errors: Record<string, string>
-}
-
-function readTypeTags(tags: string[]): ProductTypeTag[] {
-  return tags.filter((t): t is ProductTypeTag =>
-    (PRODUCT_TYPE_TAGS as readonly string[]).includes(t)
-  )
 }
 
 export function DetailsTab({
@@ -31,6 +26,7 @@ export function DetailsTab({
   categories,
   onSave,
   onDelete,
+  onChannelsChange,
   saving,
   errors,
 }: Props) {
@@ -57,7 +53,7 @@ export function DetailsTab({
     supports_labels: !!product.supports_labels,
     is_hero: !!product.is_hero,
     is_active: !!product.is_active,
-    type_tags: readTypeTags(product.tags || []),
+    tags: product.tags || [],
   })
 
   function patch<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
@@ -66,10 +62,7 @@ export function DetailsTab({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    await onSave({
-      ...form,
-      tags: form.type_tags,
-    })
+    await onSave({ ...form })
   }
 
   async function handleDelete() {
@@ -161,11 +154,17 @@ export function DetailsTab({
             />
           </Field>
         </div>
-        <TagCheckboxGroup
-          legend="Product type"
-          value={form.type_tags}
-          onChange={tags => patch('type_tags', tags)}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+          <ChannelControlRow
+            productId={product.id}
+            channels={product.channels}
+            onChange={onChannelsChange}
+          />
+          <TagPicker
+            value={form.tags}
+            onChange={tags => patch('tags', tags)}
+          />
+        </div>
       </section>
 
       <section className="flex flex-col gap-3">

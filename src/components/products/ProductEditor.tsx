@@ -9,7 +9,7 @@ import { SwatchesTab } from './tabs/SwatchesTab'
 import { SizesTab } from './tabs/SizesTab'
 import { ImagesTab } from './tabs/ImagesTab'
 import { PricingTab } from './tabs/PricingTab'
-import type { BrandRef, CategoryRef, ProductDetail } from '@/types/products'
+import type { BrandRef, CategoryRef, ChannelsMap, ProductDetail } from '@/types/products'
 
 const TABS: TabDef[] = [
   { key: 'details', label: 'Details' },
@@ -64,6 +64,10 @@ export function ProductEditor(props: Props) {
     }
   }
 
+  function applyChannelsChange(channels: ChannelsMap) {
+    setProduct(prev => ({ ...prev, channels }))
+  }
+
   async function deleteProduct() {
     const res = await fetch(`/api/products/${product.id}`, { method: 'DELETE' })
     if (!res.ok) {
@@ -97,6 +101,7 @@ export function ProductEditor(props: Props) {
             categories={props.categories}
             onSave={saveDetails}
             onDelete={deleteProduct}
+            onChannelsChange={applyChannelsChange}
             saving={savingDetails}
             errors={detailsErrors}
           />
