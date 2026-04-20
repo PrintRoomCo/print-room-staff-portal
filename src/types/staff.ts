@@ -11,6 +11,8 @@ export type StaffPermission =
   | 'products'
   | 'inventory'
   | 'inventory:write'
+  | 'orders'
+  | 'orders:write'
 
 export interface StaffUser {
   id: string

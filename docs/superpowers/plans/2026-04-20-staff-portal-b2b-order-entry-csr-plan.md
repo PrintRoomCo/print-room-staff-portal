@@ -564,7 +564,7 @@ export async function pushProductionJob(
 **Files:**
 - Modify: `src/types/staff.ts`
 
-- [ ] **Step 1: Add literals**
+- [x] **Step 1: Add literals**
 
 Append to the `StaffPermission` union:
 
@@ -573,13 +573,13 @@ Append to the `StaffPermission` union:
   | 'orders:write'
 ```
 
-- [ ] **Step 2: Type-check**
+- [x] **Step 2: Type-check**
 
 ```bash
 npx tsc --noEmit
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ---
 
