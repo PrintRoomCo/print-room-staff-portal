@@ -215,6 +215,10 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
   }
 
   function handleAddItem() {
+    const designGroupName = itemBuilder.addMode === 'same-design'
+      ? itemBuilder.designGroupName.trim()
+      : ''
+
     if (itemBuilder.addMode === 'custom') {
       addCustomItem({
         name: itemBuilder.name,
@@ -224,13 +228,13 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
         productType: itemBuilder.productType,
         quantity: itemBuilder.quantity,
         baseCost: itemBuilder.baseCost,
-        designGroupName: itemBuilder.addMode === 'same-design' ? itemBuilder.designGroupName : itemBuilder.designGroupName,
+        designGroupName,
       })
     } else if (selectedProduct) {
       addItemFromProduct(selectedProduct, itemBuilder.dataset === 'mto' ? 'mto' : 'catalog', {
         quantity: itemBuilder.quantity,
         productType: itemBuilder.productType || selectedProduct.category || '',
-        designGroupName: itemBuilder.addMode === 'same-design' ? itemBuilder.designGroupName : '',
+        designGroupName,
       })
     }
 
