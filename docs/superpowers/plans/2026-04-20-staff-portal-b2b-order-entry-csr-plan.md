@@ -652,7 +652,7 @@ export async function requireOrdersStaffAccess() {
 **Files:**
 - Create: `src/types/orders.ts`
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 export type OrderStatus =
@@ -695,7 +695,7 @@ export interface OrderSubmitResponse {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ---
 
