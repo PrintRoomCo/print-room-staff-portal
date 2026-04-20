@@ -1389,15 +1389,15 @@ async function onSubmit() {
 - If any line has an `order_ship` event, lock all edits with a yellow banner: "Some items shipped — edits disabled."
 - Sidebar: Monday item link (`https://theprintroom.monday.com/boards/<PRODUCTION_BOARD_ID>/pulses/<monday_item_id>` if set), Xero link placeholder (null in v1).
 
-- [ ] **Step 1: Write the page** — server fetches via `requireOrdersStaffAccess` and Task 15's SELECT.
+- [x] **Step 1: Write the page** — server fetches via `requireOrdersStaffAccess` and Task 15's SELECT.
 
-- [ ] **Step 2: `OrderDetailClient.tsx`** — accepts props, owns edit state.
+- [x] **Step 2: `OrderDetailClient.tsx`** — accepts props, owns edit state.
 
-- [ ] **Step 3: `LineEditRow.tsx`** — inline editor for one line.
+- [x] **Step 3: `LineEditRow.tsx`** — inline editor for one line.
 
 - [ ] **Step 4: Manual check** — create order, edit qty down, edit qty up (within stock), try over-commit (expect 409 red banner), cancel order (confirm release events written).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ---
 
