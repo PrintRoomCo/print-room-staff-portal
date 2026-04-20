@@ -137,7 +137,7 @@ select column_name from information_schema.columns
 - No `b2b_accounts` row for the org: returns unadjusted bracket price (0% discount).
 - Org has a `b2b_accounts` row but `tier_level` null: 0% discount.
 
-- [ ] **Step 1: Apply the migration**
+- [x] **Step 1: Apply the migration**
 
 `mcp__supabase__apply_migration` name `20260420_pricing_fn`:
 
@@ -176,7 +176,7 @@ end;
 $$;
 ```
 
-- [ ] **Step 2: Smoke test**
+- [x] **Step 2: Smoke test**
 
 ```sql
 -- With a real product_id + org_id that has pricing brackets seeded:
@@ -195,7 +195,7 @@ select get_unit_price(
 -- expect: 0 (no brackets for made-up product).
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ---
 
