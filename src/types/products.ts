@@ -1,5 +1,15 @@
-import type { ProductTypeTag } from '@/lib/products/tags'
 import type { GarmentFamily } from '@/lib/products/garment-families'
+
+export const CHANNELS = ['workwear', 'preorder', 'b2b'] as const
+export type Channel = (typeof CHANNELS)[number]
+export type ChannelState = 'active' | 'inactive'
+export type ChannelsMap = Partial<Record<Channel, ChannelState>>
+
+export const CHANNEL_LABELS: Record<Channel, string> = {
+  workwear: 'Workwear',
+  preorder: 'Pre-order',
+  b2b: 'B2B',
+}
 
 export interface BrandRef {
   id: string
@@ -21,6 +31,7 @@ export interface ProductSummary {
   image_url: string | null
   garment_family: GarmentFamily | null
   tags: string[]
+  channels: ChannelsMap
   shopify_product_id: string | null
   brand: BrandRef | null
   category: CategoryRef | null
@@ -39,6 +50,7 @@ export interface ProductDetail {
   industry: string[] | null
   default_sizes: string[] | null
   tags: string[]
+  channels: ChannelsMap
   base_cost: number | null
   markup_pct: number
   decoration_eligible: boolean
@@ -103,7 +115,8 @@ export interface ProductListFilters {
   brand_id: string | null
   category_id: string | null
   garment_family: GarmentFamily | null
-  type_tags: ProductTypeTag[]
+  channel: Channel | null
+  tags_filter: string[]
   shopify: ShopifyLiveFilter
   active: ActiveFilter
   page: number
