@@ -422,22 +422,22 @@ rollback;
 **Files:**
 - Create: `src/lib/monday/client.ts` — mirror of [print-room-portal/lib/monday/client.ts](print-room-portal/lib/monday/client.ts) verbatim (works as-is; no ENV differences).
 
-- [ ] **Step 1: Create the file**
+- [x] **Step 1: Create the file**
 
 Copy the contents of `print-room-portal/lib/monday/client.ts` into `print-room-staff-portal/src/lib/monday/client.ts`. No modifications — it's a self-contained fetch wrapper around `MONDAY_API_URL` with the `MONDAY_API_TOKEN` env var.
 
-- [ ] **Step 2: Confirm env**
+- [x] **Step 2: Confirm env**
 
 Add `MONDAY_API_TOKEN` to the staff-portal's `.env.local` (already in the customer-portal; verify by reading `.env.local` and/or asking the user for the token once).
 
-- [ ] **Step 3: Type-check**
+- [x] **Step 3: Type-check**
 
 ```bash
 cd c:/Users/MSI/Documents/Projects/print-room-staff-portal
 npx tsc --noEmit
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ---
 
@@ -446,11 +446,11 @@ npx tsc --noEmit
 **Files:**
 - Create: `src/lib/monday/column-ids.ts` — duplicate of [print-room-portal/lib/monday/column-ids.ts](print-room-portal/lib/monday/column-ids.ts).
 
-- [ ] **Step 1: Copy the file verbatim**
+- [x] **Step 1: Copy the file verbatim**
 
 Destination: `print-room-staff-portal/src/lib/monday/column-ids.ts`. Include the `PRODUCTION_BOARD_ID`, `PRODUCTION_COLUMNS`, `PRODUCTION_SUBITEM_COLUMNS`, `ProductionSubitemSizeKey` exports.
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ---
 
