@@ -946,7 +946,7 @@ export async function retryMondayPush(orderId: string): Promise<{ monday_item_id
 - 200 on success with `OrderSubmitResponse`.
 - Also implements `GET` for the list page (filters: `org_id`, `status`, `from`, `to`, `limit`, `offset`).
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -1010,9 +1010,9 @@ export async function GET(request: Request) {
 }
 ```
 
-- [ ] **Step 2: cURL smoke** — submit an order; rerun with same idempotency_key (expect identical response).
+- [x] **Step 2: cURL smoke** — submit an order; rerun with same idempotency_key (expect identical response). _Deferred to Task 22 E2E per plan addendum._
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ---
 
@@ -1406,7 +1406,7 @@ async function onSubmit() {
 **Files:**
 - Modify: `src/components/layout/Sidebar.tsx`
 
-- [ ] **Step 1: Add `ShoppingCart` to the lucide imports** (line 33 area):
+- [x] **Step 1: Add `ShoppingCart` to the lucide imports** (line 33 area):
 
 ```tsx
   Package,
@@ -1415,7 +1415,7 @@ async function onSubmit() {
 } from 'lucide-react'
 ```
 
-- [ ] **Step 2: Insert new section between Quote Tool and Products** (after existing quote-tool entry around line 83):
+- [x] **Step 2: Insert new section between Quote Tool and Products** (after existing quote-tool entry around line 83):
 
 ```tsx
   {
@@ -1430,7 +1430,7 @@ async function onSubmit() {
   },
 ```
 
-- [ ] **Step 3: Type-check**
+- [x] **Step 3: Type-check**
 
 ```bash
 npx tsc --noEmit
@@ -1438,7 +1438,7 @@ npx tsc --noEmit
 
 Note: the `NavSection.id` union already accepts `StaffPermission`, which now includes `'orders'`. No type change needed.
 
-- [ ] **Step 4: Visual check + commit**
+- [x] **Step 4: Visual check + commit**
 
 ---
 
