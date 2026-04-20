@@ -1,5 +1,5 @@
 import { GARMENT_FAMILIES, isGarmentFamily, type GarmentFamily } from './garment-families'
-import { sanitiseProductTags, type AllowedTag } from './tags'
+import { sanitiseTagArray } from './tag-catalog'
 
 const NUMERIC_FIELDS = ['base_cost', 'markup_pct', 'decoration_price'] as const
 const INTEGER_FIELDS = ['moq', 'lead_time_days'] as const
@@ -17,7 +17,7 @@ export interface ProductCreatePayload {
   garment_family: GarmentFamily | null
   industry: string[] | null
   default_sizes: string[] | null
-  tags: AllowedTag[]
+  tags: string[]
   base_cost: number | null
   markup_pct: number
   decoration_eligible: boolean
@@ -122,7 +122,7 @@ function normaliseCommonFields(
 
   partial.industry = parseCommaList(body.industry)
   partial.default_sizes = parseCommaList(body.default_sizes)
-  partial.tags = sanitiseProductTags(body.tags)
+  partial.tags = sanitiseTagArray(body.tags)
 
   partial.base_cost = parseNumeric(body.base_cost, null)
   partial.markup_pct = parseNumeric(body.markup_pct, 0) ?? 0
