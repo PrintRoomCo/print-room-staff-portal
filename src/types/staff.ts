@@ -8,6 +8,7 @@ export type StaffPermission =
   | 'presentations'
   | 'settings'
   | 'quote-tool'
+  | 'products'
 
 export interface StaffUser {
   id: string
