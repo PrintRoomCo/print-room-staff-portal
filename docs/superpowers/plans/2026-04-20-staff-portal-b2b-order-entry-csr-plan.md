@@ -1269,7 +1269,7 @@ export async function POST(
 - Submit disabled when: any required field blank, any line's qty > available (stocked), or a client-generated idempotency_key is missing.
 - On submit: POST to `/api/orders`; on 200, router-push to `/orders/<id>`; on 409 `OUT_OF_STOCK`, show red banner identifying the offending line.
 
-- [ ] **Step 1: `page.tsx` (server)**
+- [x] **Step 1: `page.tsx` (server)**
 
 ```tsx
 import { redirect } from 'next/navigation'
@@ -1285,7 +1285,7 @@ export default async function NewOrderPage() {
 }
 ```
 
-- [ ] **Step 2: `OrderFormClient.tsx`** (`'use client'`)
+- [x] **Step 2: `OrderFormClient.tsx`** (`'use client'`)
 
 Full top-level form. State shape:
 ```ts
@@ -1336,7 +1336,7 @@ async function onSubmit() {
 }
 ```
 
-- [ ] **Step 3: Section components**
+- [x] **Step 3: Section components**
 
 - `CompanySection.tsx` — typeahead against `/api/organizations/search?q=` (reuse endpoint from spec #1 Task 20 if shipped; else add a minimal one in this task). On select, fetches `b2b_accounts` (GET `/api/b2b-accounts?organization_id=X` — minimal new endpoint, or inline Supabase fetch via a new API route). Shows inline customer-code editor when blank; POSTs to `/api/organizations/[id]/customer-code`.
 - `ShipToSection.tsx` — select from `/api/stores?organization_id=X` (new minimal GET endpoint OR reuse one if exists). "Custom address" fills inline form; "Save as store" checkbox stored in state (not written in this task — requires a separate stores insert step in `submitB2BOrder` which v1 does not do; flag as follow-up if user wants it).
@@ -1345,9 +1345,9 @@ async function onSubmit() {
 - `TermsSection.tsx` — payment terms `<select>`, deposit % `<input>`, required-by `<input type="date">`.
 - `SummaryPanel.tsx` — pure presentational: subtotal (sum of `qty * unit_price`), deposit (subtotal × depositPercent/100), balance, line count, out-of-stock flag list.
 
-- [ ] **Step 4: Manual verification** — full happy path with a seeded org + product. Check keyboard flow.
+- [ ] **Step 4: Manual verification** — full happy path with a seeded org + product. Check keyboard flow.  _(deferred — covered by Task 22 end-to-end verification.)_
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ---
 
