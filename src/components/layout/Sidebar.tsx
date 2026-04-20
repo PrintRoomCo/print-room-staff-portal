@@ -30,6 +30,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Package,
+  Boxes,
 } from 'lucide-react'
 
 interface NavItem {
@@ -91,6 +92,16 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Workwear', href: '/products?channel=workwear', icon: Package },
       { label: 'Pre-order', href: '/products?channel=preorder', icon: Package },
       { label: 'B2B', href: '/products?channel=b2b', icon: Package },
+    ],
+  },
+  {
+    id: 'inventory',
+    label: 'Inventory',
+    icon: Boxes,
+    permission: 'inventory',
+    items: [
+      { label: 'Overview', href: '/inventory', icon: Boxes },
+      { label: 'Audit Log', href: '/inventory/events', icon: List },
     ],
   },
   {
