@@ -1,8 +1,10 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { GARMENT_FAMILIES, type GarmentFamily } from '@/lib/products/garment-families'
+import { CHANNELS, CHANNEL_LABELS, type Channel } from '@/types/products'
 import type {
   BrandRef,
   CategoryRef,
@@ -10,7 +12,6 @@ import type {
   ShopifyLiveFilter,
   ActiveFilter,
 } from '@/types/products'
-import { TagCheckboxGroup } from './TagCheckboxGroup'
 
 interface Props {
   filters: ProductListFilters
@@ -77,10 +78,21 @@ export function ProductFilters({ filters, brands, categories, onChange, onClear 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-        <TagCheckboxGroup
-          value={filters.type_tags}
-          onChange={tags => patch({ type_tags: tags })}
-        />
+        <fieldset className="flex flex-col gap-1.5">
+          <legend className="text-xs font-medium text-gray-600">Channel</legend>
+          <select
+            className="rounded-full bg-gray-50 border border-gray-200 px-5 py-2.5 text-sm"
+            value={filters.channel ?? ''}
+            onChange={e => patch({ channel: (e.target.value || null) as Channel | null })}
+          >
+            <option value="">All channels</option>
+            {CHANNELS.map(c => (
+              <option key={c} value={c}>
+                {CHANNEL_LABELS[c]}
+              </option>
+            ))}
+          </select>
+        </fieldset>
 
         <fieldset className="flex flex-col gap-1.5">
           <legend className="text-xs font-medium text-gray-600">Live on Shopify</legend>
@@ -109,11 +121,114 @@ export function ProductFilters({ filters, brands, categories, onChange, onClear 
         </fieldset>
       </div>
 
+      <TagFilterCombobox
+        value={filters.tags_filter}
+        onChange={tags_filter => patch({ tags_filter })}
+      />
+
       <div className="flex justify-end">
         <Button type="button" variant="ghost" size="sm" onClick={onClear}>
           Clear filters
         </Button>
       </div>
     </div>
+  )
+}
+
+function TagFilterCombobox({
+  value,
+  onChange,
+}: {
+  value: string[]
+  onChange: (next: string[]) => void
+}) {
+  const [draft, setDraft] = useState('')
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const q = draft.trim().toLowerCase()
+    let cancelled = false
+    const run = async () => {
+      const url = q.length > 0
+        ? `/api/products/tags?q=${encodeURIComponent(q)}`
+        : '/api/products/tags'
+      const res = await fetch(url)
+      if (!res.ok) return
+      const json = await res.json()
+      if (cancelled) return
+      const names = Array.isArray(json.tags) ? (json.tags as string[]) : []
+      setSuggestions(names.filter(n => !value.includes(n)).slice(0, 8))
+    }
+    void run()
+    return () => { cancelled = true }
+  }, [draft, value])
+
+  useEffect(() => {
+    function handler(ev: MouseEvent) {
+      if (!wrapRef.current) return
+      if (!wrapRef.current.contains(ev.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  function add(name: string) {
+    if (value.includes(name)) return
+    onChange([...value, name])
+    setDraft('')
+  }
+
+  function remove(name: string) {
+    onChange(value.filter(t => t !== name))
+  }
+
+  return (
+    <fieldset className="flex flex-col gap-1.5">
+      <legend className="text-xs font-medium text-gray-600">Tags (all must match)</legend>
+      <div ref={wrapRef} className="relative">
+        <div className="flex flex-wrap items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-2">
+          {value.map(tag => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 rounded-full bg-white border border-gray-200 px-2 py-0.5 text-xs"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => remove(tag)}
+                className="text-gray-400 hover:text-red-600"
+                aria-label={`Remove ${tag}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <input
+            type="text"
+            value={draft}
+            onFocus={() => setOpen(true)}
+            onChange={e => { setDraft(e.target.value); setOpen(true) }}
+            placeholder={value.length === 0 ? 'Filter by tag' : ''}
+            className="flex-1 min-w-[8rem] bg-transparent border-0 px-1 py-0 text-sm focus:outline-none focus:ring-0"
+          />
+        </div>
+        {open && suggestions.length > 0 && (
+          <div className="absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-2xl shadow-md overflow-hidden">
+            {suggestions.map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => add(s)}
+                className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </fieldset>
   )
 }
