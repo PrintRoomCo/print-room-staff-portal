@@ -8,6 +8,7 @@ import { DetailsTab } from './tabs/DetailsTab'
 import { SwatchesTab } from './tabs/SwatchesTab'
 import { SizesTab } from './tabs/SizesTab'
 import { ImagesTab } from './tabs/ImagesTab'
+import { PricingTab } from './tabs/PricingTab'
 import type { BrandRef, CategoryRef, ProductDetail } from '@/types/products'
 
 const TABS: TabDef[] = [
@@ -103,9 +104,7 @@ export function ProductEditor(props: Props) {
         {active === 'swatches' && <SwatchesTab productId={product.id} />}
         {active === 'sizes' && <SizesTab productId={product.id} />}
         {active === 'images' && <ImagesTab productId={product.id} />}
-        {active === 'pricing' && (
-          <p className="text-sm text-gray-500">Pricing tiers manager goes here (Task 20).</p>
-        )}
+        {active === 'pricing' && <PricingTab productId={product.id} />}
       </div>
     </div>
   )
