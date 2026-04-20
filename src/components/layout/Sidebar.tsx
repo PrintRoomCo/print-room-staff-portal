@@ -88,6 +88,9 @@ const NAV_SECTIONS: NavSection[] = [
     permission: 'products',
     items: [
       { label: 'All Products', href: '/products', icon: Package },
+      { label: 'Workwear', href: '/products?channel=workwear', icon: Package },
+      { label: 'Pre-order', href: '/products?channel=preorder', icon: Package },
+      { label: 'B2B', href: '/products?channel=b2b', icon: Package },
     ],
   },
   {
