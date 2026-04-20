@@ -247,7 +247,7 @@ select allocate_order_ref('BIK');
 - Repeat call with same idempotency_key: returns existing IDs, no duplicates.
 - Caller must pass `customer_code` — function does NOT look it up (enforced server-side in the API route).
 
-- [ ] **Step 1: Apply**
+- [x] **Step 1: Apply**
 
 `mcp__supabase__apply_migration` name `20260420_submit_b2b_order_fn`:
 
@@ -369,7 +369,7 @@ end;
 $$;
 ```
 
-- [ ] **Step 2: SQL smoke test**
+- [x] **Step 2: SQL smoke test**
 
 ```sql
 begin;
@@ -413,7 +413,7 @@ begin;
 rollback;
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ---
 
