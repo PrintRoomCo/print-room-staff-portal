@@ -32,7 +32,14 @@ export function QuoteHistoryModal({ quote, onClose }: QuoteHistoryModalProps) {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (!quote) return
+    if (!quote) {
+      setHistory([])
+      setError(null)
+      setLoading(false)
+      return
+    }
+
+    const quoteId = quote.id
 
     let isCancelled = false
 
@@ -41,7 +48,7 @@ export function QuoteHistoryModal({ quote, onClose }: QuoteHistoryModalProps) {
       setError(null)
 
       try {
-        const response = await fetch(`/api/quote-builder/quotes/${quote.id}/history`, {
+        const response = await fetch(`/api/quote-builder/quotes/${quoteId}/history`, {
           cache: 'no-store',
         })
 
