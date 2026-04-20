@@ -1122,7 +1122,7 @@ export async function DELETE(
 - `DELETE`: calls `release_quote_line` then deletes the line.
 - Both 409 if `order_ship` already recorded on that line (post-ship immutable).
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -1213,7 +1213,7 @@ export async function DELETE(
 }
 ```
 
-- [ ] **Step 2: cURL smoke (edit up, edit down, variant swap, delete) + commit**
+- [x] **Step 2: cURL smoke (edit up, edit down, variant swap, delete) + commit** (cURL deferred to Task 22)
 
 ---
 
