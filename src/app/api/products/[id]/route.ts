@@ -5,10 +5,11 @@ import {
   dbErrorResponse,
 } from '@/lib/products/server'
 import { withUniformsScope } from '@/lib/products/scope'
-import { mergeWithReservedTags } from '@/lib/products/tags'
 import { normaliseUpdate } from '@/lib/products/schema'
+import { rowsToChannelsMap } from '@/lib/products/channels'
+import { sanitiseTagArray, upsertTagCatalog } from '@/lib/products/tag-catalog'
 
-const DETAIL_SELECT = '*'
+const DETAIL_SELECT = '*, channels:product_type_activations(product_type,is_active)'
 
 export async function GET(
   _request: NextRequest,
@@ -26,7 +27,10 @@ export async function GET(
     return NextResponse.json({ error: 'Product not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ product: data })
+  const { channels, ...rest } = data as Record<string, unknown>
+  return NextResponse.json({
+    product: { ...rest, channels: rowsToChannelsMap(channels) },
+  })
 }
 
 export async function PATCH(
@@ -52,14 +56,12 @@ export async function PATCH(
     return NextResponse.json({ error: 'Validation failed.', errors: parsed.errors }, { status: 400 })
   }
 
-  const existingTags = Array.isArray(existing.product.tags) ? existing.product.tags : []
-  const incomingTags = parsed.value.tags ?? []
-  const finalTags = mergeWithReservedTags(incomingTags, existingTags)
+  const tags = sanitiseTagArray(parsed.value.tags ?? [])
 
   const { data, error } = await withUniformsScope(
     access.admin
       .from('products')
-      .update({ ...parsed.value, tags: finalTags, updated_at: new Date().toISOString() })
+      .update({ ...parsed.value, tags, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select(DETAIL_SELECT)
       .limit(1)
@@ -67,7 +69,14 @@ export async function PATCH(
 
   if (error || !data) return dbErrorResponse(error, 'Failed to update product.')
 
-  return NextResponse.json({ product: data })
+  if (tags.length > 0) {
+    await upsertTagCatalog(access.admin, tags, access.context.staffId)
+  }
+
+  const { channels, ...rest } = data as Record<string, unknown>
+  return NextResponse.json({
+    product: { ...rest, channels: rowsToChannelsMap(channels) },
+  })
 }
 
 export async function DELETE(
