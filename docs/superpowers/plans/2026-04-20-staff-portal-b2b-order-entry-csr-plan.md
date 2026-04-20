@@ -87,7 +87,7 @@
 - `b2b_accounts.organization_id uuid unique references organizations(id)` (nullable).
 - Index on `quotes.order_ref`.
 
-- [ ] **Step 1: Apply the migration**
+- [x] **Step 1: Apply the migration**
 
 Invoke `mcp__supabase__apply_migration` with `name = "20260420_orders_schema"`:
 
@@ -105,7 +105,7 @@ alter table b2b_accounts
 create index quotes_order_ref_idx on quotes (order_ref) where order_ref is not null;
 ```
 
-- [ ] **Step 2: Verify** via `mcp__supabase__execute_sql`:
+- [x] **Step 2: Verify** via `mcp__supabase__execute_sql`:
 
 ```sql
 select column_name from information_schema.columns
@@ -125,7 +125,7 @@ select column_name from information_schema.columns
 -- expect: 1 row
 ```
 
-- [ ] **Step 3: Commit** the plan doc.
+- [x] **Step 3: Commit** the plan doc.
 
 ---
 
