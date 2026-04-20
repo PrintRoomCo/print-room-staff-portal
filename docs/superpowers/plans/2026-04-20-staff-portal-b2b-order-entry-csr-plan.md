@@ -1364,13 +1364,13 @@ async function onSubmit() {
 - Filter form posts via URL-change (client component wrapping inputs, submit resets `page=1`).
 - Pagination `prev`/`next` using `limit=25` default.
 
-- [ ] **Step 1: Write the page** — server fetches via `requireOrdersStaffAccess` + direct SELECT on `orders` join `quotes` join `organizations`.
+- [x] **Step 1: Write the page** — server fetches via `requireOrdersStaffAccess` + direct SELECT on `orders` join `quotes` join `organizations`.
 
-- [ ] **Step 2: Write `OrdersList.tsx`** — presentational.
+- [x] **Step 2: Write `OrdersList.tsx`** — presentational.
 
 - [ ] **Step 3: Manual check** — create two orders (task 18), land on list, confirm both appear, filters work.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ---
 
