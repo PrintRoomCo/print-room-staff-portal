@@ -6,14 +6,8 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ShopifyLiveBadge } from './ShopifyLiveBadge'
-import { PRODUCT_TYPE_TAGS, PRODUCT_TYPE_TAG_LABELS, type ProductTypeTag } from '@/lib/products/tags'
+import { ChannelsCell } from './ChannelsCell'
 import type { ProductSummary } from '@/types/products'
-
-const TAG_BADGE_VARIANT: Record<ProductTypeTag, 'green' | 'yellow' | 'blue'> = {
-  workwear: 'blue',
-  preorder: 'yellow',
-  b2b: 'green',
-}
 
 interface Props {
   product: ProductSummary
@@ -22,9 +16,6 @@ interface Props {
 
 export function ProductRow({ product, onToggleActive }: Props) {
   const [busy, setBusy] = useState(false)
-  const typeTags = (product.tags || []).filter((t): t is ProductTypeTag =>
-    (PRODUCT_TYPE_TAGS as readonly string[]).includes(t)
-  )
 
   async function handleToggle() {
     setBusy(true)
@@ -60,11 +51,6 @@ export function ProductRow({ product, onToggleActive }: Props) {
           >
             {product.name}
           </Link>
-          {typeTags.map(t => (
-            <Badge key={t} variant={TAG_BADGE_VARIANT[t]}>
-              {PRODUCT_TYPE_TAG_LABELS[t]}
-            </Badge>
-          ))}
           <ShopifyLiveBadge shopifyId={product.shopify_product_id} />
           {!product.is_active && <Badge variant="gray">Inactive</Badge>}
         </div>
@@ -74,6 +60,10 @@ export function ProductRow({ product, onToggleActive }: Props) {
           {product.category?.name && <span>{product.category.name}</span>}
           {product.garment_family && <span>{product.garment_family}</span>}
         </div>
+      </div>
+
+      <div className="min-w-[12rem] max-w-[16rem]">
+        <ChannelsCell channels={product.channels} />
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">

@@ -53,6 +53,18 @@ export default async function ProductsPage({
     admin.from('categories').select('id, name').order('name'),
   ])
 
+  if (productsResult.error) {
+    console.error('Products list query failed:', productsResult.error)
+    return (
+      <div className="max-w-lg mx-auto py-16 text-center">
+        <h1 className="text-xl font-semibold">Couldn&apos;t load products</h1>
+        <p className="text-sm text-gray-500 mt-2">
+          The query failed. Check server logs for details.
+        </p>
+      </div>
+    )
+  }
+
   const initial: ProductListResponse = {
     products: (productsResult.data || []) as unknown as ProductListResponse['products'],
     total: productsResult.count || 0,

@@ -42,10 +42,6 @@ export function ProductList({ initial, brands, categories }: Props) {
     [total]
   )
 
-  useEffect(() => {
-    setFilters(parseListSearchParams(searchParams))
-  }, [searchParams])
-
   const fetchPage = useCallback(async (next: ProductListFilters) => {
     setLoading(true)
     try {
@@ -59,6 +55,12 @@ export function ProductList({ initial, brands, categories }: Props) {
       setLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    const next = parseListSearchParams(searchParams)
+    setFilters(next)
+    void fetchPage(next)
+  }, [searchParams, fetchPage])
 
   function applyFilters(next: ProductListFilters) {
     setFilters(next)
