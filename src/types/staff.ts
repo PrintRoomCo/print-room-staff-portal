@@ -9,6 +9,8 @@ export type StaffPermission =
   | 'settings'
   | 'quote-tool'
   | 'products'
+  | 'inventory'
+  | 'inventory:write'
 
 export interface StaffUser {
   id: string
