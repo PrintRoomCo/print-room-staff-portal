@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { TabNav, type TabDef } from './TabNav'
 import { DetailsTab } from './tabs/DetailsTab'
 import { SwatchesTab } from './tabs/SwatchesTab'
+import { SizesTab } from './tabs/SizesTab'
 import type { BrandRef, CategoryRef, ProductDetail } from '@/types/products'
 
 const TABS: TabDef[] = [
@@ -99,9 +100,7 @@ export function ProductEditor(props: Props) {
           />
         )}
         {active === 'swatches' && <SwatchesTab productId={product.id} />}
-        {active === 'sizes' && (
-          <p className="text-sm text-gray-500">Sizes manager goes here (Task 18).</p>
-        )}
+        {active === 'sizes' && <SizesTab productId={product.id} />}
         {active === 'images' && (
           <p className="text-sm text-gray-500">Images manager goes here (Task 19).</p>
         )}
