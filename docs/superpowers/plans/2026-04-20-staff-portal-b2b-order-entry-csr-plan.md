@@ -466,7 +466,7 @@ Destination: `print-room-staff-portal/src/lib/monday/column-ids.ts`. Include the
 - Idempotency: if `order.monday_item_id` is already set, skips item creation and only adds missing subitems.
 - Errors thrown on GraphQL failure; caller handles.
 
-- [ ] **Step 1: Write the helper**
+- [x] **Step 1: Write the helper**
 
 ```ts
 import { mondayApiCall } from './client'
@@ -555,7 +555,7 @@ export async function pushProductionJob(
 }
 ```
 
-- [ ] **Step 2: Type-check + commit**
+- [x] **Step 2: Type-check + commit**
 
 ---
 
