@@ -1,0 +1,48 @@
+import { notFound, redirect } from 'next/navigation'
+import { getSupabaseAdmin, getSupabaseServer } from '@/lib/supabase-server'
+import { withUniformsScope } from '@/lib/products/scope'
+import { ProductEditor } from '@/components/products/ProductEditor'
+import type { BrandRef, CategoryRef, ProductDetail } from '@/types/products'
+
+export const dynamic = 'force-dynamic'
+
+export default async function ProductEditPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const supabase = await getSupabaseServer()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/sign-in')
+
+  const admin = getSupabaseAdmin()
+  const { data: staff } = await admin
+    .from('staff_users')
+    .select('role, permissions')
+    .eq('user_id', user.id)
+    .eq('is_active', true)
+    .single()
+
+  const isAdmin = staff?.role === 'admin' || staff?.role === 'super_admin'
+  const perms = Array.isArray(staff?.permissions) ? staff!.permissions : []
+  if (!isAdmin && !perms.includes('products') && !perms.includes('products:write')) {
+    redirect('/dashboard')
+  }
+
+  const { id } = await params
+  const [productRes, brandsRes, categoriesRes] = await Promise.all([
+    withUniformsScope(admin.from('products').select('*').eq('id', id)).single(),
+    admin.from('brands').select('id, name').order('name'),
+    admin.from('categories').select('id, name').order('name'),
+  ])
+
+  if (productRes.error || !productRes.data) notFound()
+
+  return (
+    <ProductEditor
+      product={productRes.data as ProductDetail}
+      brands={(brandsRes.data || []) as BrandRef[]}
+      categories={(categoriesRes.data || []) as CategoryRef[]}
+    />
+  )
+}
