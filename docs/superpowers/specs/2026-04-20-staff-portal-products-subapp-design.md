@@ -1,7 +1,7 @@
 # Sub-app #1 — Products — Design Spec
 
 **Date:** 2026-04-20
-**Status:** Approved (sections A–H, 2026-04-20)
+**Status:** Implemented (2026-04-20). v1 live; v1.1 follow-ups tracked in §11.
 **Owner:** Jon (jon@theprint-room.co.nz)
 **Repo:** `print-room-staff-portal` (Next.js 16, Tailwind v4, Supabase Auth)
 
