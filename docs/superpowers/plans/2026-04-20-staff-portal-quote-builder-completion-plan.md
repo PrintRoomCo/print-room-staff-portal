@@ -85,7 +85,7 @@
 - `approved_at timestamptz`, `approved_by uuid references staff_users(id)`, `monday_board_id text` exist.
 - All nullable.
 
-- [ ] **Step 1: Apply**
+- [x] **Step 1: Apply**
 
 Invoke `mcp__supabase__apply_migration` with `name = "20260420_quote_builder_approval_columns"`:
 
@@ -99,7 +99,7 @@ create index staff_quotes_status_idx on staff_quotes (status);
 create index staff_quotes_staff_user_idx on staff_quotes (staff_user_id);
 ```
 
-- [ ] **Step 2: Verify**
+- [x] **Step 2: Verify**
 
 ```sql
 select column_name from information_schema.columns
@@ -109,7 +109,7 @@ select column_name from information_schema.columns
 -- expect: 3 rows
 ```
 
-- [ ] **Step 3: Commit** the plan doc.
+- [x] **Step 3: Commit** the plan doc.
 
 ---
 
