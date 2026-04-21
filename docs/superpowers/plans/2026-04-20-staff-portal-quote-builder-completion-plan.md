@@ -433,7 +433,7 @@ export function validateApproveReady(data: QuotePayload): string[] {
 - Returns `{ quote: <row> }` with 201 (or 200 for idempotency — easier).
 - 400 on validation; 403 via helper.
 
-- [ ] **Step 1: Add POST**
+- [x] **Step 1: Add POST**
 
 At the bottom of [src/app/api/quote-tool/quotes/route.ts](print-room-staff-portal/src/app/api/quote-tool/quotes/route.ts):
 
