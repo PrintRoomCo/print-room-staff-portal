@@ -248,14 +248,14 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
       <nav aria-label="Mobile header" className="md:hidden">
         <div className="header-floating-wrapper">
           <div className="header-floating-inner">
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href="/dashboard" prefetch={false} className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 shadow-sm flex items-center justify-center overflow-hidden">
                 <Image
                   src="/print-room-logo.png"
                   alt="Print Room Logo"
                   width={24}
                   height={24}
-                  className="object-contain"
+                  className="h-auto w-auto object-contain"
                 />
               </div>
               <span className="text-white text-sm font-semibold">Staff Portal</span>
@@ -317,6 +317,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
         >
           <Link
             href="/dashboard"
+            prefetch={false}
             className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} group`}
           >
             <div className="w-12 h-12 rounded-2xl bg-white border border-gray-100 shadow-sm flex items-center justify-center overflow-hidden transition-all duration-300 ease-spring group-hover:shadow-md flex-shrink-0">
@@ -325,7 +326,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
                 alt="Print Room Logo"
                 width={40}
                 height={40}
-                className="object-contain"
+                className="h-auto w-auto object-contain"
               />
             </div>
             {!sidebarCollapsed && (
@@ -357,6 +358,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
                 <Link
                   key={section.id}
                   href={item.href}
+                  prefetch={false}
                   className={`sidebar-link ${isActive ? 'sidebar-link-active' : ''} ${sidebarCollapsed ? 'justify-center !px-2' : ''}`}
                   title={sidebarCollapsed ? section.label : undefined}
                 >
@@ -373,6 +375,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
                 <Link
                   key={section.id}
                   href={firstItem.href}
+                  prefetch={false}
                   className={`sidebar-link justify-center !px-2 ${isSectionActive ? 'sidebar-link-active' : ''}`}
                   title={section.label}
                 >
@@ -408,6 +411,7 @@ export function Sidebar({ children }: { children: React.ReactNode }) {
                         <Link
                           key={item.href}
                           href={item.href}
+                          prefetch={false}
                           className={`sidebar-link text-xs ${isActive ? 'sidebar-link-active' : ''}`}
                         >
                           <item.icon className="w-4 h-4 flex-shrink-0" />

@@ -44,7 +44,7 @@ export default async function InventoryLandingPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {orgs.map((o) => (
-            <Link key={o.id} href={`/inventory/${o.id}`}>
+            <Link key={o.id} href={`/inventory/${o.id}`} prefetch={false}>
               <OrgCard org={o} />
             </Link>
           ))}

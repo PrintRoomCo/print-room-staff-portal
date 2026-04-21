@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireOrdersStaffAccess } from '@/lib/orders/server'
+import { fetchOrderDetailData } from '@/lib/orders/read'
 
 export async function GET(
   _request: Request,
@@ -9,20 +10,8 @@ export async function GET(
   if ('error' in auth) return auth.error
   const { id } = await params
 
-  const { data: order, error } = await auth.admin
-    .from('orders')
-    .select(`
-      id, status, total_price, placed_at, account_id,
-      quotes!inner (
-        id, order_ref, customer_name, customer_email, customer_phone,
-        organization_id, required_by, payment_terms, notes, internal_notes,
-        shipping_address, monday_item_id,
-        organizations:organization_id ( id, name, customer_code )
-      )
-    `)
-    .eq('id', id)
-    .single()
-  if (error || !order) {
+  const { order, quote, organization } = await fetchOrderDetailData(auth.admin, id)
+  if (!order || !quote) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
@@ -37,9 +26,16 @@ export async function GET(
         sizes (label, order_index)
       )
     `)
-    .eq('quote_id', (order.quotes as any).id)
+    .eq('quote_id', quote.id)
 
-  return NextResponse.json({ order, lines: lines ?? [] })
+  return NextResponse.json({
+    order: {
+      ...order,
+      quote,
+      organization,
+    },
+    lines: lines ?? [],
+  })
 }
 
 export async function DELETE(

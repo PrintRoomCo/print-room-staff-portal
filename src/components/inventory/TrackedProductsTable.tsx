@@ -27,7 +27,7 @@ export function TrackedProductsTable({ orgId, products }: TrackedProductsTablePr
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {products.map((p) => (
-        <Link key={p.id} href={`/inventory/${orgId}/${p.id}`}>
+        <Link key={p.id} href={`/inventory/${orgId}/${p.id}`} prefetch={false}>
           <Card variant="interactive" className="p-4 flex items-center gap-4">
             {p.image_url ? (
               // Plain <img> avoids needing to allowlist arbitrary product image

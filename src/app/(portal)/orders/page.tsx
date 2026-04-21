@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { requireOrdersStaffAccess } from '@/lib/orders/server'
+import { fetchOrdersListData } from '@/lib/orders/read'
 import {
   ORDERS_PAGE_SIZE,
   OrdersList,
@@ -8,22 +9,6 @@ import {
 } from '@/components/orders/OrdersList'
 
 export const dynamic = 'force-dynamic'
-
-interface OrderRow {
-  id: string
-  status: string
-  total_price: number | null
-  placed_at: string | null
-  quote_id: string | null
-  quotes: {
-    order_ref: string | null
-    customer_name: string | null
-    organization_id: string | null
-    required_by: string | null
-    organizations: { name: string | null } | null
-    quote_items: { count: number }[] | null
-  } | null
-}
 
 function firstString(v: string | string[] | undefined): string {
   if (Array.isArray(v)) return v[0] ?? ''
@@ -55,28 +40,14 @@ export default async function OrdersPage({
   const filters = parseFilters(sp)
   const offset = (filters.page - 1) * ORDERS_PAGE_SIZE
 
-  let q = auth.admin
-    .from('orders')
-    .select(
-      `
-      id, status, total_price, placed_at, quote_id,
-      quotes!inner (
-        order_ref, customer_name, organization_id, required_by,
-        organizations:organization_id ( name ),
-        quote_items ( count )
-      )
-    `,
-      { count: 'exact' }
-    )
-    .order('placed_at', { ascending: false })
-    .range(offset, offset + ORDERS_PAGE_SIZE - 1)
-
-  if (filters.status) q = q.eq('status', filters.status)
-  if (filters.org_id) q = q.eq('quotes.organization_id', filters.org_id)
-  if (filters.from) q = q.gte('placed_at', filters.from)
-  if (filters.to) q = q.lte('placed_at', filters.to)
-
-  const { data, count, error } = await q
+  const { orders, count, quotesById, organizationsById, lineCountsByQuoteId, error } = await fetchOrdersListData(auth.admin, {
+    status: filters.status || undefined,
+    orgId: filters.org_id || undefined,
+    from: filters.from || undefined,
+    to: filters.to || undefined,
+    limit: ORDERS_PAGE_SIZE,
+    offset,
+  })
 
   if (error) {
     console.error('Orders list query failed:', error)
@@ -90,20 +61,21 @@ export default async function OrdersPage({
     )
   }
 
-  const rawRows = (data ?? []) as unknown as OrderRow[]
-  const rows: OrdersListRow[] = rawRows.map((r) => ({
-    id: r.id,
-    status: r.status,
-    total_price: r.total_price,
-    placed_at: r.placed_at,
-    order_ref: r.quotes?.order_ref ?? null,
-    org_name: r.quotes?.organizations?.name ?? null,
-    required_by: r.quotes?.required_by ?? null,
-    line_count:
-      Array.isArray(r.quotes?.quote_items) && r.quotes!.quote_items!.length > 0
-        ? Number(r.quotes!.quote_items![0].count)
-        : null,
-  }))
+  const rows: OrdersListRow[] = orders.map((order) => {
+    const quote = order.quote_id ? quotesById[order.quote_id] : undefined
+    const organization = quote?.organization_id ? organizationsById[quote.organization_id] : undefined
+
+    return {
+      id: order.id,
+      status: order.status,
+      total_price: order.total_price,
+      placed_at: order.placed_at,
+      order_ref: quote?.order_ref ?? null,
+      org_name: organization?.name ?? null,
+      required_by: quote?.required_by ?? null,
+      line_count: order.quote_id ? lineCountsByQuoteId[order.quote_id] ?? null : null,
+    }
+  })
 
   return <OrdersList rows={rows} total={count ?? 0} filters={filters} />
 }

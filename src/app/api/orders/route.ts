@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireOrdersStaffAccess } from '@/lib/orders/server'
+import { fetchOrdersListData } from '@/lib/orders/read'
 import { submitB2BOrder } from '@/lib/orders/submit'
 import type { OrderSubmitRequest } from '@/types/orders'
 
@@ -49,27 +50,32 @@ export async function GET(request: Request) {
   const limit = Math.min(200, Math.max(1, Number(p.get('limit') ?? 25)))
   const offset = Math.max(0, Number(p.get('offset') ?? 0))
 
-  let q = auth.admin
-    .from('orders')
-    .select(
-      `
-      id, status, total_price, placed_at, quote_id,
-      quotes!inner (
-        order_ref, customer_name, organization_id, required_by,
-        organizations:organization_id ( name )
-      )
-    `,
-      { count: 'exact' }
-    )
-    .order('placed_at', { ascending: false })
-    .range(offset, offset + limit - 1)
+  const { orders, count, quotesById, organizationsById, lineCountsByQuoteId, error } = await fetchOrdersListData(auth.admin, {
+    status: p.get('status') || undefined,
+    orgId: p.get('org_id') || undefined,
+    from: p.get('from') || undefined,
+    to: p.get('to') || undefined,
+    limit,
+    offset,
+  })
 
-  if (p.get('status')) q = q.eq('status', p.get('status')!)
-  if (p.get('org_id')) q = q.eq('quotes.organization_id', p.get('org_id')!)
-  if (p.get('from')) q = q.gte('placed_at', p.get('from')!)
-  if (p.get('to')) q = q.lte('placed_at', p.get('to')!)
+  if (error) return NextResponse.json({ error }, { status: 500 })
 
-  const { data, count, error } = await q
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json({ orders: data ?? [], total: count ?? 0, limit, offset })
+  const payload = orders.map((order) => {
+    const quote = order.quote_id ? quotesById[order.quote_id] : undefined
+    const organization = quote?.organization_id ? organizationsById[quote.organization_id] : undefined
+
+    return {
+      ...order,
+      quote: quote
+        ? {
+            ...quote,
+            organization: organization ?? null,
+          }
+        : null,
+      line_count: order.quote_id ? lineCountsByQuoteId[order.quote_id] ?? null : null,
+    }
+  })
+
+  return NextResponse.json({ orders: payload, total: count ?? 0, limit, offset })
 }

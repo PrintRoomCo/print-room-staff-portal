@@ -110,7 +110,7 @@ export function OrdersList({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Orders</h1>
-        <Link href="/orders/new">
+        <Link href="/orders/new" prefetch={false}>
           <Button>New order</Button>
         </Link>
       </div>
@@ -207,7 +207,7 @@ export function OrdersList({
               rows.map((r) => (
                 <tr key={r.id} className="border-t hover:bg-gray-50">
                   <td className="px-3 py-2 font-medium">
-                    <Link href={`/orders/${r.id}`} className="text-blue-600 hover:underline">
+                    <Link href={`/orders/${r.id}`} prefetch={false} className="text-blue-600 hover:underline">
                       {r.order_ref ?? r.id.slice(0, 8)}
                     </Link>
                   </td>
@@ -242,6 +242,7 @@ export function OrdersList({
           {hasPrev ? (
             <Link
               href={`/orders${buildQuery({ ...filters, page: currentPage - 1 })}`}
+              prefetch={false}
               className="border rounded px-3 py-1 hover:bg-gray-50"
             >
               Prev
@@ -257,6 +258,7 @@ export function OrdersList({
           {hasNext ? (
             <Link
               href={`/orders${buildQuery({ ...filters, page: currentPage + 1 })}`}
+              prefetch={false}
               className="border rounded px-3 py-1 hover:bg-gray-50"
             >
               Next

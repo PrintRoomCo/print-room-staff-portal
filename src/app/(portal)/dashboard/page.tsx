@@ -82,7 +82,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {visibleTools.map((tool) => (
-          <Link key={tool.id} href={tool.href}>
+          <Link key={tool.id} href={tool.href} prefetch={false}>
             <Card className="h-full hover:shadow-md transition-shadow cursor-pointer relative">
               {tool.status === 'coming-soon' && (
                 <div className="absolute top-3 right-3 bg-amber-100 text-amber-800 text-xs font-medium px-2 py-0.5 rounded-full">

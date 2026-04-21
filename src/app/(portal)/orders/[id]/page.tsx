@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { requireOrdersStaffAccess } from '@/lib/orders/server'
+import { fetchOrderDetailData } from '@/lib/orders/read'
 import {
   OrderDetailClient,
   type OrderDetailHeader,
@@ -7,29 +8,6 @@ import {
 import type { OrderLine } from '@/components/orders/LineEditRow'
 
 export const dynamic = 'force-dynamic'
-
-interface RawOrderRow {
-  id: string
-  status: string
-  total_price: number | null
-  placed_at: string | null
-  account_id: string | null
-  quotes: {
-    id: string
-    order_ref: string | null
-    customer_name: string | null
-    customer_email: string | null
-    customer_phone: string | null
-    organization_id: string | null
-    required_by: string | null
-    payment_terms: string | null
-    notes: string | null
-    internal_notes: string | null
-    shipping_address: unknown
-    monday_item_id: string | null
-    organizations: { id: string; name: string | null; customer_code: string | null } | null
-  } | null
-}
 
 interface RawLineRow {
   id: string
@@ -60,27 +38,11 @@ export default async function OrderDetailPage({
     redirect('/dashboard')
   }
 
-  const { data: order, error: orderErr } = await auth.admin
-    .from('orders')
-    .select(
-      `
-      id, status, total_price, placed_at, account_id,
-      quotes!inner (
-        id, order_ref, customer_name, customer_email, customer_phone,
-        organization_id, required_by, payment_terms, notes, internal_notes,
-        shipping_address, monday_item_id,
-        organizations:organization_id ( id, name, customer_code )
-      )
-    `,
-    )
-    .eq('id', id)
-    .single()
+  const { order, quote, organization, error } = await fetchOrderDetailData(auth.admin, id)
 
-  if (orderErr || !order) {
+  if (error || !order || !quote) {
     notFound()
   }
-
-  const raw = order as unknown as RawOrderRow
 
   const { data: rawLines } = await auth.admin
     .from('quote_items')
@@ -95,7 +57,7 @@ export default async function OrderDetailPage({
       )
     `,
     )
-    .eq('quote_id', raw.quotes?.id ?? '')
+    .eq('quote_id', quote.id)
 
   const lineRows = (rawLines ?? []) as unknown as RawLineRow[]
   const lineIds = lineRows.map((l) => l.id)
@@ -128,13 +90,13 @@ export default async function OrderDetailPage({
   }))
 
   const header: OrderDetailHeader = {
-    id: raw.id,
-    order_ref: raw.quotes?.order_ref ?? null,
-    org_name: raw.quotes?.organizations?.name ?? null,
-    status: raw.status,
-    placed_at: raw.placed_at,
-    total_price: raw.total_price === null ? null : Number(raw.total_price),
-    monday_item_id: raw.quotes?.monday_item_id ?? null,
+    id: order.id,
+    order_ref: quote.order_ref ?? null,
+    org_name: organization?.name ?? null,
+    status: order.status,
+    placed_at: order.placed_at,
+    total_price: order.total_price === null ? null : Number(order.total_price),
+    monday_item_id: quote.monday_item_id ?? null,
   }
 
   return (
