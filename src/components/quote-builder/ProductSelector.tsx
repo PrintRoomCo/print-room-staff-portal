@@ -10,6 +10,7 @@ interface ProductSelectorProps {
   selectedProductId?: string | null
   onSelect: (product: Product | MtoProduct) => void
   label?: string
+  disabled?: boolean
 }
 
 function matchesProduct(product: Product | MtoProduct, query: string) {
@@ -31,6 +32,7 @@ export function ProductSelector({
   selectedProductId,
   onSelect,
   label = 'Product',
+  disabled = false,
 }: ProductSelectorProps) {
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
@@ -56,6 +58,7 @@ export function ProductSelector({
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search by product, SKU, brand, or category"
           className="pl-11"
+          disabled={disabled}
         />
       </div>
 
@@ -70,6 +73,7 @@ export function ProductSelector({
               key={product.id}
               type="button"
               className="flex w-full items-start justify-between gap-4 border-b border-gray-100 px-4 py-4 text-left transition-colors last:border-b-0 hover:bg-muted/30"
+              disabled={disabled}
               onClick={() => {
                 onSelect(product)
                 setQuery(`${product.name}${product.sku ? ` · ${product.sku}` : ''}`)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, Plus } from 'lucide-react'
 import { Header } from '@/components/image-generator/header'
@@ -18,7 +18,7 @@ import { QuoteSummary } from '@/components/quote-builder/QuoteSummary'
 import { DesignGroup } from '@/components/quote-builder/DesignGroup'
 import { ORDER_EXTRA_NAMES } from '@/lib/quote-builder/types'
 import { ExtrasSelector } from '@/components/quote-builder/ExtrasSelector'
-import type { MtoProduct, Product, QuoteItem } from '@/lib/quote-builder/types'
+import type { MtoProduct, Product, QuoteDraft, QuoteItem, QuotePricingBreakdown } from '@/lib/quote-builder/types'
 
 interface QuoteFormProps {
   mode: 'create' | 'edit'
@@ -26,6 +26,7 @@ interface QuoteFormProps {
 }
 
 type AddMode = 'catalog' | 'custom' | 'same-design'
+type SaveState = 'idle' | 'saving' | 'saved' | 'error' | 'locked'
 
 interface NewItemState {
   addMode: AddMode
@@ -69,6 +70,28 @@ function getSavedQuoteId(payload: unknown) {
   const record = asRecord(payload)
   const quote = asRecord(record?.quote)
   return asString(quote?.id) ?? asString(record?.id)
+}
+
+function buildQuoteSavePayload(
+  sanitizedDraft: QuoteDraft,
+  pricing: Pick<QuotePricingBreakdown, 'subtotal' | 'discountRate' | 'total'>
+) {
+  return {
+    quote_data: {
+      ...sanitizedDraft,
+      subtotal: pricing.subtotal,
+      total: pricing.total,
+    },
+    subtotal: pricing.subtotal,
+    discount_percent: pricing.discountRate * 100,
+    total: pricing.total,
+    customer_name: sanitizedDraft.customerName,
+    customer_email: sanitizedDraft.customerEmail,
+    customer_company: sanitizedDraft.customerCompany,
+    customer_phone: sanitizedDraft.customerPhone,
+    staff_notes: sanitizedDraft.notes,
+    valid_until: sanitizedDraft.expiryDate || null,
+  }
 }
 
 function mapStaffQuoteRowToDraft(payload: unknown): Record<string, unknown> {
@@ -137,7 +160,11 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
   const [pageError, setPageError] = useState<string | null>(null)
   const [loadingQuote, setLoadingQuote] = useState(mode === 'edit')
   const [saving, setSaving] = useState(false)
+  const [saveState, setSaveState] = useState<SaveState>('idle')
   const [toast, setToast] = useState<{ text: string } | null>(null)
+  const autosaveInitializedRef = useRef(mode !== 'edit')
+  const lastAutosavePayloadRef = useRef<string | null>(null)
+  const latestAutosavePayloadRef = useRef<string | null>(null)
   const [, startTransition] = useTransition()
 
   const {
@@ -169,6 +196,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
   } = useQuoteForm({ initialAccountManager: staff?.display_name })
 
   const { pricing } = useQuotePricing(draft, referenceData)
+  const isLocked = saveState === 'locked'
 
   useEffect(() => {
     if (!toast) return
@@ -178,10 +206,10 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
   }, [toast])
 
   useEffect(() => {
-    if (!draft.templateId && referenceData.templates[0]) {
+    if (!isLocked && !draft.templateId && referenceData.templates[0]) {
       updateField('templateId', referenceData.templates[0].id)
     }
-  }, [draft.templateId, referenceData.templates, updateField])
+  }, [draft.templateId, isLocked, referenceData.templates, updateField])
 
   useEffect(() => {
     if (mode !== 'edit' || !quoteId) {
@@ -206,7 +234,13 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
         const payload = await response.json()
 
         if (!isCancelled) {
-          replaceDraft(mapStaffQuoteRowToDraft(payload))
+          const nextDraft = mapStaffQuoteRowToDraft(payload)
+          const nextStatus = asString(nextDraft.status)
+          replaceDraft(nextDraft)
+          setSaveState(nextStatus === 'approved' || nextStatus === 'cancelled' ? 'locked' : 'saved')
+          autosaveInitializedRef.current = false
+          lastAutosavePayloadRef.current = null
+          latestAutosavePayloadRef.current = null
         }
       } catch (caughtError) {
         if (!isCancelled) {
@@ -226,6 +260,75 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
     }
   }, [mode, quoteId, replaceDraft])
 
+  useEffect(() => {
+    if (mode !== 'edit' || !quoteId || loadingQuote || pageError || isLocked) {
+      return
+    }
+
+    const payload = buildQuoteSavePayload(getSanitizedDraft(), pricing)
+    const serializedPayload = JSON.stringify(payload)
+    latestAutosavePayloadRef.current = serializedPayload
+
+    if (!autosaveInitializedRef.current) {
+      autosaveInitializedRef.current = true
+      lastAutosavePayloadRef.current = serializedPayload
+      return
+    }
+
+    if (lastAutosavePayloadRef.current === serializedPayload) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(async () => {
+      lastAutosavePayloadRef.current = serializedPayload
+      setSaveState('saving')
+
+      try {
+        const response = await fetch(`/api/quote-tool/quotes/${quoteId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: serializedPayload,
+        })
+        const result = await response.json().catch(() => null)
+
+        if (response.status === 409) {
+          setSaveState('locked')
+          return
+        }
+
+        if (!response.ok) {
+          if (latestAutosavePayloadRef.current === serializedPayload) {
+            setSaveState('error')
+            setToast({ text: getSaveErrorText(result) })
+          }
+          return
+        }
+
+        if (latestAutosavePayloadRef.current === serializedPayload) {
+          setSaveState('saved')
+        }
+      } catch (caughtError) {
+        if (latestAutosavePayloadRef.current === serializedPayload) {
+          setSaveState('error')
+          setToast({ text: caughtError instanceof Error ? caughtError.message : 'Failed to autosave quote' })
+        }
+      }
+    }, 1500)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [
+    draft,
+    getSanitizedDraft,
+    isLocked,
+    loadingQuote,
+    mode,
+    pageError,
+    pricing,
+    quoteId,
+  ])
+
   const productSourceList = itemBuilder.dataset === 'catalog' ? referenceData.products : referenceData.mtoProducts
   const availableBrands = Array.from(new Set(productSourceList.map((product) => product.brand).filter(Boolean) as string[])).sort()
   const availableCategories = Array.from(new Set(productSourceList.map((product) => product.category).filter(Boolean) as string[])).sort()
@@ -236,27 +339,15 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
   })
 
   async function handleSaveQuote() {
+    if (isLocked) return
+
     setSaving(true)
     setToast(null)
+    if (mode === 'edit') setSaveState('saving')
 
     try {
       const sanitizedDraft = getSanitizedDraft()
-      const payload = {
-        quote_data: {
-          ...sanitizedDraft,
-          subtotal: pricing.subtotal,
-          total: pricing.total,
-        },
-        subtotal: pricing.subtotal,
-        discount_percent: pricing.discountRate * 100,
-        total: pricing.total,
-        customer_name: sanitizedDraft.customerName,
-        customer_email: sanitizedDraft.customerEmail,
-        customer_company: sanitizedDraft.customerCompany,
-        customer_phone: sanitizedDraft.customerPhone,
-        staff_notes: sanitizedDraft.notes,
-        valid_until: sanitizedDraft.expiryDate || null,
-      }
+      const payload = buildQuoteSavePayload(sanitizedDraft, pricing)
 
       const response = await fetch(mode === 'create' ? '/api/quote-tool/quotes' : `/api/quote-tool/quotes/${quoteId}`, {
         method: mode === 'create' ? 'POST' : 'PATCH',
@@ -268,8 +359,21 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
       const result = await response.json().catch(() => null)
 
       if (!response.ok) {
+        if (response.status === 409) {
+          setSaveState('locked')
+          return
+        }
+
+        if (mode === 'edit') setSaveState('error')
         setToast({ text: getSaveErrorText(result) })
         return
+      }
+
+      if (mode === 'edit') {
+        const serializedPayload = JSON.stringify(payload)
+        lastAutosavePayloadRef.current = serializedPayload
+        latestAutosavePayloadRef.current = serializedPayload
+        setSaveState('saved')
       }
 
       const nextId = getSavedQuoteId(result) ?? quoteId
@@ -282,6 +386,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
         setToast({ text: 'Quote saved, but the response did not include an id.' })
       }
     } catch (caughtError) {
+      if (mode === 'edit') setSaveState('error')
       setToast({ text: caughtError instanceof Error ? caughtError.message : 'Failed to save quote' })
     } finally {
       setSaving(false)
@@ -365,6 +470,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
         onAddItemExtra={() => addItemExtra(item.id)}
         onPatchItemExtra={(extraId, patch) => patchItemExtra(item.id, extraId, patch)}
         onRemoveItemExtra={(extraId) => removeItemExtra(item.id, extraId)}
+        disabled={isLocked}
       />
     )
   }
@@ -399,6 +505,20 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
         </div>
       ) : null}
 
+      {isLocked ? (
+        <Card className="border-amber-200 bg-amber-50 p-5">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 text-amber-700" />
+            <div>
+              <div className="font-medium text-amber-950">This quote is approved. Edits are disabled.</div>
+              <div className="mt-1 text-sm text-amber-900">
+                Approved quotes must be changed through the approval or production workflow.
+              </div>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
       {pageError ? (
         <Card className="border-red-100 bg-red-50 p-5">
           <div className="flex items-start gap-3">
@@ -425,6 +545,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
             templates={referenceData.templates}
             staffUsers={referenceData.staffUsers}
             onFieldChange={updateField}
+            disabled={isLocked}
           />
 
           <Card className="p-6">
@@ -443,6 +564,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                     value={itemBuilder.addMode}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, addMode: event.target.value as AddMode }))}
                     className={selectClassName}
+                    disabled={isLocked}
                   >
                     <option value="catalog">Add Product</option>
                     <option value="custom">Add Custom</option>
@@ -467,6 +589,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                       }))
                     }}
                     className={selectClassName}
+                    disabled={isLocked}
                   >
                     <option value="catalog">Catalog</option>
                     <option value="mto">MTO</option>
@@ -479,6 +602,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                     value={itemBuilder.brand}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, brand: event.target.value }))}
                     className={selectClassName}
+                    disabled={isLocked}
                   >
                     <option value="all">All brands</option>
                     {availableBrands.map((brand) => (
@@ -495,6 +619,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                     value={itemBuilder.category}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, category: event.target.value }))}
                     className={selectClassName}
+                    disabled={isLocked}
                   >
                     <option value="all">All categories</option>
                     {availableCategories.map((category) => (
@@ -512,21 +637,25 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                     value={itemBuilder.name}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, name: event.target.value }))}
                     placeholder="Custom product name"
+                    disabled={isLocked}
                   />
                   <Input
                     value={itemBuilder.customBrand}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, customBrand: event.target.value }))}
                     placeholder="Brand"
+                    disabled={isLocked}
                   />
                   <Input
                     value={itemBuilder.productType}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, productType: event.target.value }))}
                     placeholder="Product type"
+                    disabled={isLocked}
                   />
                   <Input
                     value={itemBuilder.sourcingType}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, sourcingType: event.target.value }))}
                     placeholder="Sourcing type"
+                    disabled={isLocked}
                   />
                   <Input
                     type="number"
@@ -534,6 +663,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                     value={itemBuilder.quantity}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, quantity: Number.parseInt(event.target.value || '24', 10) }))}
                     placeholder="Quantity"
+                    disabled={isLocked}
                   />
                   <Input
                     type="number"
@@ -542,6 +672,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                     value={itemBuilder.baseCost}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, baseCost: Number.parseFloat(event.target.value || '0') }))}
                     placeholder="Base cost"
+                    disabled={isLocked}
                   />
                 </div>
               ) : (
@@ -549,6 +680,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                   products={filteredProducts}
                   selectedProductId={selectedProduct?.id}
                   onSelect={setSelectedProduct}
+                  disabled={isLocked}
                 />
               )}
 
@@ -560,6 +692,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                     min={itemBuilder.dataset === 'mto' ? 50 : 24}
                     value={itemBuilder.quantity}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, quantity: Number.parseInt(event.target.value || '24', 10) }))}
+                    disabled={isLocked}
                   />
                 </label>
 
@@ -569,6 +702,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                     value={itemBuilder.productType}
                     onChange={(event) => setItemBuilder((current) => ({ ...current, productType: event.target.value }))}
                     placeholder="Apparel, headwear, bag…"
+                    disabled={isLocked}
                   />
                 </label>
 
@@ -579,6 +713,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                       value={itemBuilder.designGroupName}
                       onChange={(event) => setItemBuilder((current) => ({ ...current, designGroupName: event.target.value }))}
                       placeholder="Shared design name"
+                      disabled={isLocked}
                     />
                   </label>
                 ) : null}
@@ -589,7 +724,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
                   type="button"
                   variant="accent"
                   onClick={handleAddItem}
-                  disabled={itemBuilder.addMode !== 'custom' && !selectedProduct}
+                  disabled={isLocked || (itemBuilder.addMode !== 'custom' && !selectedProduct)}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Add to Quote
@@ -615,6 +750,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
             onAdd={addOrderExtra}
             onChange={patchOrderExtra}
             onRemove={removeOrderExtra}
+            disabled={isLocked}
           />
         </div>
 
@@ -627,6 +763,8 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
           saving={saving}
           saveLabel={mode === 'create' ? 'Save draft' : 'Save Quote'}
           savingLabel={mode === 'create' ? 'Saving draft…' : 'Saving Quote…'}
+          saveState={mode === 'edit' ? saveState : 'idle'}
+          disabled={isLocked}
         />
       </div>
     </div>

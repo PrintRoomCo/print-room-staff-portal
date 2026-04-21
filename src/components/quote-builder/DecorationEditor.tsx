@@ -17,6 +17,7 @@ interface DecorationEditorProps {
   onAddExtra: () => void
   onChangeExtra: (extraId: string, patch: Partial<QuoteExtra>) => void
   onRemoveExtra: (extraId: string) => void
+  disabled?: boolean
 }
 
 const selectClassName = 'h-10 w-full rounded-full border border-gray-200 bg-gray-50 px-4 text-sm text-foreground outline-none transition-all duration-200 focus:border-gray-400 focus:bg-gray-100 focus:[box-shadow:0_0_0_3px_rgba(0,0,0,0.06)]'
@@ -46,6 +47,7 @@ export function DecorationEditor({
   onAddExtra,
   onChangeExtra,
   onRemoveExtra,
+  disabled = false,
 }: DecorationEditorProps) {
   const availableDecorations = filterDecorations(item, decorations)
   const typeOptions = Array.from(new Set(availableDecorations.map((option) => option.decoration_type))).sort()
@@ -61,7 +63,7 @@ export function DecorationEditor({
           <h4 className="font-medium text-foreground">Decoration</h4>
           <p className="mt-1 text-xs text-muted-foreground">Technique, detail, and placement for this product.</p>
         </div>
-        <Button type="button" variant="ghost" size="icon" onClick={onRemove} aria-label="Remove decoration">
+        <Button type="button" variant="ghost" size="icon" onClick={onRemove} aria-label="Remove decoration" disabled={disabled}>
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
@@ -71,6 +73,7 @@ export function DecorationEditor({
           value={decoration.decorationType}
           onChange={(event) => onChange({ decorationType: event.target.value, decorationDetail: '', sourceId: null })}
           className={selectClassName}
+          disabled={disabled}
         >
           <option value="">Decoration type</option>
           {typeOptions.map((typeOption) => (
@@ -96,6 +99,7 @@ export function DecorationEditor({
             })
           }}
           className={selectClassName}
+          disabled={disabled}
         >
           <option value="">Decoration detail</option>
           {detailOptions.map((option) => (
@@ -109,6 +113,7 @@ export function DecorationEditor({
           value={decoration.location}
           onChange={(event) => onChange({ location: event.target.value })}
           className={selectClassName}
+          disabled={disabled}
         >
           <option value="">Location</option>
           {locationOptions.map((location) => (
@@ -126,6 +131,7 @@ export function DecorationEditor({
         onAdd={onAddExtra}
         onChange={onChangeExtra}
         onRemove={onRemoveExtra}
+        disabled={disabled}
       />
 
       <div className="rounded-2xl bg-gray-50 px-4 py-3 text-xs text-muted-foreground">

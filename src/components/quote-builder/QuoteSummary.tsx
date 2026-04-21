@@ -16,6 +16,8 @@ interface QuoteSummaryProps {
   saving: boolean
   saveLabel?: string
   savingLabel?: string
+  saveState?: 'idle' | 'saving' | 'saved' | 'error' | 'locked'
+  disabled?: boolean
 }
 
 const DISCLAIMER_TEXT = 'Prices exclude GST unless shown otherwise. Final pricing remains subject to artwork review, stock confirmation, and freight adjustments.'
@@ -29,6 +31,8 @@ export function QuoteSummary({
   saving,
   saveLabel = 'Save Quote',
   savingLabel = 'Saving Quote…',
+  saveState = 'idle',
+  disabled = false,
 }: QuoteSummaryProps) {
   const displayedTotal = draft.includeGst ? pricing.totalInclGst : pricing.total
 
@@ -80,11 +84,13 @@ export function QuoteSummary({
               active={draft.includeGst}
               label="Incl. GST"
               onClick={() => onFieldChange('includeGst', !draft.includeGst)}
+              disabled={disabled}
             />
             <ToggleChip
               active={draft.showTotal}
               label="Show Total"
               onClick={() => onFieldChange('showTotal', !draft.showTotal)}
+              disabled={disabled}
             />
           </div>
         </div>
@@ -94,11 +100,12 @@ export function QuoteSummary({
         </div>
 
         <div className="mt-5 flex flex-col gap-3">
+          {saveState !== 'idle' ? <SaveStateBadge state={saveState} /> : null}
           <Button variant="accent" disabled>
             <FileText className="mr-2 h-4 w-4" />
             Generate Quote PDF
           </Button>
-          <Button variant="secondary" onClick={onSave} disabled={saving}>
+          <Button variant="secondary" onClick={onSave} disabled={saving || disabled}>
             <Save className="mr-2 h-4 w-4" />
             {saving ? savingLabel : saveLabel}
           </Button>
@@ -113,6 +120,7 @@ export function QuoteSummary({
             value={draft.notes}
             onChange={(event) => onFieldChange('notes', event.target.value)}
             placeholder="Add production notes, delivery considerations, or handoff context"
+            disabled={disabled}
           />
         </div>
       </Card>
@@ -129,11 +137,30 @@ function TotalRow({ label, value, accent = false }: { label: string; value: stri
   )
 }
 
-function ToggleChip({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+function SaveStateBadge({ state }: { state: NonNullable<QuoteSummaryProps['saveState']> }) {
+  const config = {
+    saving: { label: 'Saving…', className: 'bg-sky-100 text-sky-800' },
+    saved: { label: 'Saved', className: 'bg-emerald-100 text-emerald-800' },
+    error: { label: 'Save failed', className: 'bg-red-100 text-red-800' },
+    locked: { label: 'Locked', className: 'bg-amber-100 text-amber-900' },
+    idle: { label: '', className: '' },
+  }[state]
+
+  if (!config.label) return null
+
+  return (
+    <div className={`self-start rounded-full px-3 py-1 text-xs font-medium ${config.className}`}>
+      {config.label}
+    </div>
+  )
+}
+
+function ToggleChip({ active, label, onClick, disabled = false }: { active: boolean; label: string; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${active ? 'border-[rgb(var(--color-brand-blue))] bg-[rgb(var(--color-brand-blue))] text-white' : 'border-gray-200 bg-white text-foreground hover:bg-gray-50'}`}
     >
       {label}

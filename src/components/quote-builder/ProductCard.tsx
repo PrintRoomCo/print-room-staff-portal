@@ -38,6 +38,7 @@ interface ProductCardProps {
   onAddItemExtra: () => void
   onPatchItemExtra: (extraId: string, patch: Partial<QuoteExtra>) => void
   onRemoveItemExtra: (extraId: string) => void
+  disabled?: boolean
 }
 
 export function ProductCard({
@@ -60,6 +61,7 @@ export function ProductCard({
   onAddItemExtra,
   onPatchItemExtra,
   onRemoveItemExtra,
+  disabled = false,
 }: ProductCardProps) {
   const decorationExtraOptions = referenceData.extras.filter((extra) => extra.category === 'decoration')
 
@@ -90,11 +92,11 @@ export function ProductCard({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="secondary" size="sm" onClick={onDuplicateItem}>
+          <Button type="button" variant="secondary" size="sm" onClick={onDuplicateItem} disabled={disabled}>
             <Copy className="mr-2 h-4 w-4" />
             Duplicate
           </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={onRemoveItem}>
+          <Button type="button" variant="ghost" size="sm" onClick={onRemoveItem} disabled={disabled}>
             <Trash2 className="mr-2 h-4 w-4" />
             Remove
           </Button>
@@ -109,7 +111,7 @@ export function ProductCard({
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <EditableField label="Item Name">
-          <Input value={item.name} onChange={(event) => onPatchItem({ name: event.target.value })} />
+          <Input value={item.name} onChange={(event) => onPatchItem({ name: event.target.value })} disabled={disabled} />
         </EditableField>
 
         <EditableField label="Quantity">
@@ -118,6 +120,7 @@ export function ProductCard({
             min={Math.max(item.minQty || 24, 1)}
             value={item.quantity}
             onChange={(event) => onPatchItem({ quantity: Number.parseInt(event.target.value || '0', 10) })}
+            disabled={disabled}
           />
         </EditableField>
 
@@ -128,27 +131,28 @@ export function ProductCard({
             step="0.01"
             value={item.baseCost}
             onChange={(event) => onPatchItem({ baseCost: Number.parseFloat(event.target.value || '0') })}
+            disabled={disabled}
           />
         </EditableField>
 
         <EditableField label="Design Group">
-          <Input value={item.designGroupName || ''} onChange={(event) => onPatchItem({ designGroupName: event.target.value })} placeholder="Optional" />
+          <Input value={item.designGroupName || ''} onChange={(event) => onPatchItem({ designGroupName: event.target.value })} placeholder="Optional" disabled={disabled} />
         </EditableField>
 
         <EditableField label="Brand">
-          <Input value={item.brand || ''} onChange={(event) => onPatchItem({ brand: event.target.value })} />
+          <Input value={item.brand || ''} onChange={(event) => onPatchItem({ brand: event.target.value })} disabled={disabled} />
         </EditableField>
 
         <EditableField label="Category">
-          <Input value={item.category || ''} onChange={(event) => onPatchItem({ category: event.target.value })} />
+          <Input value={item.category || ''} onChange={(event) => onPatchItem({ category: event.target.value })} disabled={disabled} />
         </EditableField>
 
         <EditableField label="Sourcing Type">
-          <Input value={item.sourcingType} onChange={(event) => onPatchItem({ sourcingType: event.target.value })} />
+          <Input value={item.sourcingType} onChange={(event) => onPatchItem({ sourcingType: event.target.value })} disabled={disabled} />
         </EditableField>
 
         <EditableField label="Product Type">
-          <Input value={item.productType || ''} onChange={(event) => onPatchItem({ productType: event.target.value })} />
+          <Input value={item.productType || ''} onChange={(event) => onPatchItem({ productType: event.target.value })} disabled={disabled} />
         </EditableField>
       </div>
 
@@ -160,7 +164,7 @@ export function ProductCard({
             <h4 className="font-medium text-foreground">Decorations</h4>
             <p className="text-sm text-muted-foreground">Add every logo application and location required for this item.</p>
           </div>
-          <Button type="button" variant="secondary" size="sm" onClick={onAddDecoration}>
+          <Button type="button" variant="secondary" size="sm" onClick={onAddDecoration} disabled={disabled}>
             <PackagePlus className="mr-2 h-4 w-4" />
             Add Decoration
           </Button>
@@ -185,6 +189,7 @@ export function ProductCard({
             onAddExtra={() => onAddDecorationExtra(decoration.id)}
             onChangeExtra={(extraId, patch) => onPatchDecorationExtra(decoration.id, extraId, patch)}
             onRemoveExtra={(extraId) => onRemoveDecorationExtra(decoration.id, extraId)}
+            disabled={disabled}
           />
         ))}
       </section>
@@ -196,6 +201,7 @@ export function ProductCard({
         onAdd={onAddItemExtra}
         onChange={onPatchItemExtra}
         onRemove={onRemoveItemExtra}
+        disabled={disabled}
       />
 
       <FinishSelector
@@ -205,6 +211,7 @@ export function ProductCard({
         onAdd={onAddFinish}
         onChange={onPatchFinish}
         onRemove={onRemoveFinish}
+        disabled={disabled}
       />
 
       <div className="grid gap-4 rounded-3xl border border-gray-100 bg-gray-50 p-4 md:grid-cols-2 xl:grid-cols-4">

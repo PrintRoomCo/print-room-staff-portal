@@ -922,7 +922,7 @@ Connect the existing "Save" button element in `QuoteForm.tsx` to `saveDraft`. If
 - Shows a small "Saved" badge near the form actions when the PATCH resolves; "Saving…" during the request.
 - 409 → render a non-dismissable banner: "This quote is approved. Edits are disabled." Mark all inputs disabled.
 
-- [ ] **Step 1: Add autosave hook**
+- [x] **Step 1: Add autosave hook**
 
 In `QuoteForm.tsx`, if editing (i.e. a `quoteId` prop is present):
 
@@ -943,7 +943,7 @@ useEffect(() => {
 }, [draft, pricing.total, quoteId])
 ```
 
-- [ ] **Step 2: Lock inputs when `saveState === 'locked'`**
+- [x] **Step 2: Lock inputs when `saveState === 'locked'`**
 
 All inputs get `disabled={saveState === 'locked'}`.
 

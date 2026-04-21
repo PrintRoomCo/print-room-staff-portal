@@ -11,6 +11,7 @@ interface QuoteDetailsSectionProps {
   templates: Template[]
   staffUsers: QuoteBuilderStaffOption[]
   onFieldChange: <K extends keyof QuoteDraft>(field: K, value: QuoteDraft[K]) => void
+  disabled?: boolean
 }
 
 const selectClassName = 'h-10 w-full rounded-full border border-gray-200 bg-gray-50 px-4 text-sm text-foreground outline-none transition-all duration-200 focus:border-gray-400 focus:bg-gray-100 focus:[box-shadow:0_0_0_3px_rgba(0,0,0,0.06)]'
@@ -27,6 +28,7 @@ export function QuoteDetailsSection({
   templates,
   staffUsers,
   onFieldChange,
+  disabled = false,
 }: QuoteDetailsSectionProps) {
   return (
     <details open className="rounded-[28px] border border-gray-100 bg-white shadow-sm">
@@ -42,11 +44,11 @@ export function QuoteDetailsSection({
 
       <div className="grid gap-4 border-t border-gray-100 px-6 py-6 md:grid-cols-2 xl:grid-cols-3">
         <Field label="Customer Name">
-          <Input value={draft.customerName} onChange={(event) => onFieldChange('customerName', event.target.value)} placeholder="Customer or company contact" />
+          <Input value={draft.customerName} onChange={(event) => onFieldChange('customerName', event.target.value)} placeholder="Customer or company contact" disabled={disabled} />
         </Field>
 
         <Field label="Customer Email">
-          <Input type="email" value={draft.customerEmail} onChange={(event) => onFieldChange('customerEmail', event.target.value)} placeholder="customer@example.com" />
+          <Input type="email" value={draft.customerEmail} onChange={(event) => onFieldChange('customerEmail', event.target.value)} placeholder="customer@example.com" disabled={disabled} />
         </Field>
 
         <Field label="Account Manager">
@@ -55,6 +57,7 @@ export function QuoteDetailsSection({
               value={draft.accountManager}
               onChange={(event) => onFieldChange('accountManager', event.target.value)}
               className={selectClassName}
+              disabled={disabled}
             >
               <option value="">Select manager</option>
               {staffUsers.map((staffUser) => (
@@ -64,21 +67,21 @@ export function QuoteDetailsSection({
               ))}
             </select>
           ) : (
-            <Input value={draft.accountManager} onChange={(event) => onFieldChange('accountManager', event.target.value)} placeholder="Account manager" />
+            <Input value={draft.accountManager} onChange={(event) => onFieldChange('accountManager', event.target.value)} placeholder="Account manager" disabled={disabled} />
           )}
         </Field>
 
         <Field label="In-hand Date">
-          <Input type="date" value={draft.inHandDate} onChange={(event) => onFieldChange('inHandDate', event.target.value)} />
+          <Input type="date" value={draft.inHandDate} onChange={(event) => onFieldChange('inHandDate', event.target.value)} disabled={disabled} />
         </Field>
 
         <Field label="Quote Reference">
-          <Input value={draft.quoteReference} onChange={(event) => onFieldChange('quoteReference', event.target.value)} placeholder="QB-2026-001" />
+          <Input value={draft.quoteReference} onChange={(event) => onFieldChange('quoteReference', event.target.value)} placeholder="QB-2026-001" disabled={disabled} />
         </Field>
 
         <Field label="Expiry Date">
           <div className="space-y-3">
-            <Input type="date" value={draft.expiryDate} onChange={(event) => onFieldChange('expiryDate', event.target.value)} />
+            <Input type="date" value={draft.expiryDate} onChange={(event) => onFieldChange('expiryDate', event.target.value)} disabled={disabled} />
             <div className="flex flex-wrap gap-2">
               {EXPIRY_PRESET_DAYS.map((days) => (
                 <button
@@ -86,6 +89,7 @@ export function QuoteDetailsSection({
                   type="button"
                   onClick={() => onFieldChange('expiryDate', addDaysFromToday(days))}
                   className="rounded-full border border-gray-200 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-gray-50"
+                  disabled={disabled}
                 >
                   {days === 0 ? 'Today' : `${days}d`}
                 </button>
@@ -99,6 +103,7 @@ export function QuoteDetailsSection({
             value={draft.priceTier}
             onChange={(event) => onFieldChange('priceTier', event.target.value)}
             className={selectClassName}
+            disabled={disabled}
           >
             <option value="">Select tier</option>
             {priceTiers.map((tier) => (
@@ -114,6 +119,7 @@ export function QuoteDetailsSection({
             value={draft.templateId}
             onChange={(event) => onFieldChange('templateId', event.target.value)}
             className={selectClassName}
+            disabled={disabled}
           >
             <option value="">Select template</option>
             {templates.map((template) => (
@@ -132,6 +138,7 @@ export function QuoteDetailsSection({
             value={draft.customDiscount ?? ''}
             onChange={(event) => onFieldChange('customDiscount', event.target.value ? Number.parseFloat(event.target.value) : null)}
             placeholder="Optional"
+            disabled={disabled}
           />
         </Field>
 
@@ -140,6 +147,7 @@ export function QuoteDetailsSection({
             value={draft.status}
             onChange={(event) => onFieldChange('status', event.target.value as QuoteDraft['status'])}
             className={selectClassName}
+            disabled={disabled}
           >
             {QUOTE_STATUS_OPTIONS.map((statusOption) => (
               <option key={statusOption.value} value={statusOption.value}>

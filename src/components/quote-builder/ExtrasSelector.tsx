@@ -12,6 +12,7 @@ interface ExtrasSelectorProps {
   onAdd: () => void
   onChange: (extraId: string, patch: Partial<QuoteExtra>) => void
   onRemove: (extraId: string) => void
+  disabled?: boolean
 }
 
 const selectClassName = 'h-10 w-full rounded-full border border-gray-200 bg-gray-50 px-4 text-sm text-foreground outline-none transition-all duration-200 focus:border-gray-400 focus:bg-gray-100 focus:[box-shadow:0_0_0_3px_rgba(0,0,0,0.06)]'
@@ -23,6 +24,7 @@ export function ExtrasSelector({
   onAdd,
   onChange,
   onRemove,
+  disabled = false,
 }: ExtrasSelectorProps) {
   return (
     <div className="space-y-4 rounded-3xl border border-gray-100 p-4">
@@ -31,7 +33,7 @@ export function ExtrasSelector({
           <h4 className="font-medium text-foreground">{title}</h4>
           <p className="mt-1 text-xs text-muted-foreground">Choose a preset or enter a custom extra.</p>
         </div>
-        <Button type="button" variant="secondary" size="sm" onClick={onAdd}>
+        <Button type="button" variant="secondary" size="sm" onClick={onAdd} disabled={disabled}>
           <Plus className="mr-2 h-4 w-4" />
           Add Extra
         </Button>
@@ -63,6 +65,7 @@ export function ExtrasSelector({
               })
             }}
             className={selectClassName}
+            disabled={disabled}
           >
             <option value="">Custom extra</option>
             {options.map((option) => (
@@ -76,15 +79,17 @@ export function ExtrasSelector({
             value={extra.name}
             onChange={(event) => onChange(extra.id, { name: event.target.value })}
             placeholder="Extra name"
+            disabled={disabled}
           />
 
           <Input
             value={extra.price}
             onChange={(event) => onChange(extra.id, { price: event.target.value })}
             placeholder="$2.50"
+            disabled={disabled}
           />
 
-          <Button type="button" variant="ghost" size="icon" onClick={() => onRemove(extra.id)} aria-label="Remove extra">
+          <Button type="button" variant="ghost" size="icon" onClick={() => onRemove(extra.id)} aria-label="Remove extra" disabled={disabled}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>

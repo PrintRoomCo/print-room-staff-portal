@@ -11,6 +11,7 @@ interface FinishSelectorProps {
   onAdd: () => void
   onChange: (finishId: string, patch: Partial<QuoteFinish>) => void
   onRemove: (finishId: string) => void
+  disabled?: boolean
 }
 
 const selectClassName = 'h-10 w-full rounded-full border border-gray-200 bg-gray-50 px-4 text-sm text-foreground outline-none transition-all duration-200 focus:border-gray-400 focus:bg-gray-100 focus:[box-shadow:0_0_0_3px_rgba(0,0,0,0.06)]'
@@ -22,6 +23,7 @@ export function FinishSelector({
   onAdd,
   onChange,
   onRemove,
+  disabled = false,
 }: FinishSelectorProps) {
   const availableOptions = options.filter((option) => {
     const matchesSource = !option.sourcing_type || option.sourcing_type === item.sourcingType
@@ -37,7 +39,7 @@ export function FinishSelector({
           <h4 className="font-medium text-foreground">Finishes & Packaging</h4>
           <p className="mt-1 text-xs text-muted-foreground">Add any finishing touches that apply to this line item.</p>
         </div>
-        <Button type="button" variant="secondary" size="sm" onClick={onAdd}>
+        <Button type="button" variant="secondary" size="sm" onClick={onAdd} disabled={disabled}>
           <Plus className="mr-2 h-4 w-4" />
           Add Finish
         </Button>
@@ -65,6 +67,7 @@ export function FinishSelector({
               })
             }}
             className={selectClassName}
+            disabled={disabled}
           >
             <option value="">Select finish</option>
             {availableOptions.map((option) => (
@@ -74,7 +77,7 @@ export function FinishSelector({
             ))}
           </select>
 
-          <Button type="button" variant="ghost" size="icon" onClick={() => onRemove(finish.id)} aria-label="Remove finish">
+          <Button type="button" variant="ghost" size="icon" onClick={() => onRemove(finish.id)} aria-label="Remove finish" disabled={disabled}>
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
