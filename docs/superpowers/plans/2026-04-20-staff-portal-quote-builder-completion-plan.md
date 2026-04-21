@@ -277,7 +277,7 @@ export async function requireQuotesStaffAccess(
 
 **Acceptance:** behaviour unchanged; auth inlined code replaced by `requireQuotesStaffAccess()`.
 
-- [ ] **Step 1: Rewrite list GET** in [route.ts](print-room-staff-portal/src/app/api/quote-tool/quotes/route.ts):
+- [x] **Step 1: Rewrite list GET** in [route.ts](print-room-staff-portal/src/app/api/quote-tool/quotes/route.ts):
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -311,7 +311,7 @@ export async function GET(request: Request) {
 }
 ```
 
-- [ ] **Step 2: Rewrite detail GET** in [[id]/route.ts](print-room-staff-portal/src/app/api/quote-tool/quotes/[id]/route.ts):
+- [x] **Step 2: Rewrite detail GET** in [[id]/route.ts](print-room-staff-portal/src/app/api/quote-tool/quotes/[id]/route.ts):
 
 ```ts
 import { NextRequest, NextResponse } from 'next/server'
@@ -334,9 +334,9 @@ export async function GET(
 }
 ```
 
-- [ ] **Step 3: Manual smoke** — fetch list and detail still work as the existing UI expects.
+- [x] **Step 3: Manual smoke** — fetch list and detail still work as the existing UI expects.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ---
 
