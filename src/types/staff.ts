@@ -8,6 +8,8 @@ export type StaffPermission =
   | 'presentations'
   | 'settings'
   | 'quote-tool'
+  | 'quotes:write'
+  | 'quotes:approve'
   | 'products'
   | 'inventory'
   | 'inventory:write'

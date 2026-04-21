@@ -175,7 +175,7 @@ git commit -m "feat(quotes): add approved + cancelled to QuoteStatus"
 **Files:**
 - Modify: `src/types/staff.ts`
 
-- [ ] **Step 1: Add literals**
+- [x] **Step 1: Add literals**
 
 Append to the `StaffPermission` union (after the existing additions from the inventory/orders plans):
 
@@ -184,7 +184,7 @@ Append to the `StaffPermission` union (after the existing additions from the inv
   | 'quotes:approve'
 ```
 
-- [ ] **Step 2: Type-check + commit**
+- [x] **Step 2: Type-check + commit**
 
 ---
 
