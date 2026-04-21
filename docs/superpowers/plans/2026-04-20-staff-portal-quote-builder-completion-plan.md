@@ -124,7 +124,7 @@ select column_name from information_schema.columns
 - `QUOTE_STATUS_OPTIONS` includes both with labels `'Approved'` and `'Cancelled'`.
 - `npx tsc --noEmit` clean.
 
-- [ ] **Step 1: Update the union** (replace the existing `QuoteStatus` declaration at line 1-8):
+- [x] **Step 1: Update the union** (replace the existing `QuoteStatus` declaration at line 1-8):
 
 ```ts
 export type QuoteStatus =
@@ -139,7 +139,7 @@ export type QuoteStatus =
   | 'archived'
 ```
 
-- [ ] **Step 2: Update `QUOTE_STATUS_OPTIONS`** (replace lines 310-317):
+- [x] **Step 2: Update `QUOTE_STATUS_OPTIONS`** (replace lines 310-317):
 
 ```ts
 export const QUOTE_STATUS_OPTIONS: Array<{ label: string; value: QuoteStatus }> = [
@@ -154,14 +154,14 @@ export const QUOTE_STATUS_OPTIONS: Array<{ label: string; value: QuoteStatus }> 
 
 (Deliberately omit `accepted`/`declined` from the dropdown — they're deprecated; old rows still render via the badge.)
 
-- [ ] **Step 3: Type-check**
+- [x] **Step 3: Type-check**
 
 ```bash
 cd c:/Users/MSI/Documents/Projects/print-room-staff-portal
 npx tsc --noEmit
 ```
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/lib/quote-builder/types.ts

@@ -2,8 +2,10 @@ export type QuoteStatus =
   | 'created'
   | 'draft'
   | 'sent'
-  | 'accepted'
-  | 'declined'
+  | 'approved'
+  | 'cancelled'
+  | 'accepted'   // deprecated; legacy rows only
+  | 'declined'   // deprecated; legacy rows only
   | 'expired'
   | 'archived'
 
@@ -311,8 +313,8 @@ export const QUOTE_STATUS_OPTIONS: Array<{ label: string; value: QuoteStatus }> 
   { label: 'Created', value: 'created' },
   { label: 'Draft', value: 'draft' },
   { label: 'Sent', value: 'sent' },
-  { label: 'Accepted', value: 'accepted' },
-  { label: 'Declined', value: 'declined' },
+  { label: 'Approved', value: 'approved' },
+  { label: 'Cancelled', value: 'cancelled' },
   { label: 'Expired', value: 'expired' },
 ]
 
