@@ -18,7 +18,7 @@ import { QuoteSummary } from '@/components/quote-builder/QuoteSummary'
 import { DesignGroup } from '@/components/quote-builder/DesignGroup'
 import { ORDER_EXTRA_NAMES } from '@/lib/quote-builder/types'
 import { ExtrasSelector } from '@/components/quote-builder/ExtrasSelector'
-import type { MtoProduct, Product, QuoteItem, QuoteDraft } from '@/lib/quote-builder/types'
+import type { MtoProduct, Product, QuoteItem } from '@/lib/quote-builder/types'
 
 interface QuoteFormProps {
   mode: 'create' | 'edit'
@@ -42,6 +42,58 @@ interface NewItemState {
 }
 
 const selectClassName = 'h-10 w-full rounded-full border border-gray-200 bg-gray-50 px-4 text-sm text-foreground outline-none transition-all duration-200 focus:border-gray-400 focus:bg-gray-100 focus:[box-shadow:0_0_0_3px_rgba(0,0,0,0.06)]'
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+
+  return value as Record<string, unknown>
+}
+
+function asString(value: unknown) {
+  return typeof value === 'string' ? value : null
+}
+
+function getSaveErrorText(payload: unknown) {
+  const record = asRecord(payload)
+  const issues = Array.isArray(record?.issues)
+    ? record.issues.filter((issue): issue is string => typeof issue === 'string')
+    : []
+
+  if (issues.length > 0) return issues.join('; ')
+  return asString(record?.error) ?? 'Failed to save quote'
+}
+
+function getSavedQuoteId(payload: unknown) {
+  const record = asRecord(payload)
+  const quote = asRecord(record?.quote)
+  return asString(quote?.id) ?? asString(record?.id)
+}
+
+function mapStaffQuoteRowToDraft(payload: unknown): Record<string, unknown> {
+  const record = asRecord(payload)
+  const quote = asRecord(record?.quote) ?? record
+  const quoteData = asRecord(quote?.quote_data)
+  if (!quote) return {}
+  if (!quoteData) return quote
+
+  return {
+    ...quoteData,
+    id: quote.id,
+    status: quote.status,
+    customerName: quoteData.customerName ?? quote.customer_name,
+    customerEmail: quoteData.customerEmail ?? quote.customer_email,
+    customerCompany: quoteData.customerCompany ?? quote.customer_company,
+    customerPhone: quoteData.customerPhone ?? quote.customer_phone,
+    notes: quoteData.notes ?? quote.staff_notes,
+    expiryDate: quoteData.expiryDate ?? quote.valid_until,
+    subtotal: quote.subtotal,
+    total: quote.total,
+    createdAt: quote.created_at,
+    updatedAt: quote.updated_at,
+  }
+}
 
 function createNewItemState(): NewItemState {
   return {
@@ -85,6 +137,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
   const [pageError, setPageError] = useState<string | null>(null)
   const [loadingQuote, setLoadingQuote] = useState(mode === 'edit')
   const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState<{ text: string } | null>(null)
   const [, startTransition] = useTransition()
 
   const {
@@ -118,6 +171,13 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
   const { pricing } = useQuotePricing(draft, referenceData)
 
   useEffect(() => {
+    if (!toast) return
+
+    const timeoutId = window.setTimeout(() => setToast(null), 8000)
+    return () => window.clearTimeout(timeoutId)
+  }, [toast])
+
+  useEffect(() => {
     if (!draft.templateId && referenceData.templates[0]) {
       updateField('templateId', referenceData.templates[0].id)
     }
@@ -135,7 +195,7 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
       setPageError(null)
 
       try {
-        const response = await fetch(`/api/quote-builder/quotes/${quoteId}`, {
+        const response = await fetch(`/api/quote-tool/quotes/${quoteId}`, {
           cache: 'no-store',
         })
 
@@ -144,10 +204,9 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
         }
 
         const payload = await response.json()
-        const quotePayload = payload.quote || payload
 
         if (!isCancelled) {
-          replaceDraft(quotePayload as Record<string, unknown>)
+          replaceDraft(mapStaffQuoteRowToDraft(payload))
         }
       } catch (caughtError) {
         if (!isCancelled) {
@@ -178,37 +237,52 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
 
   async function handleSaveQuote() {
     setSaving(true)
-    setPageError(null)
+    setToast(null)
 
     try {
-      const payload: QuoteDraft = {
-        ...getSanitizedDraft(),
+      const sanitizedDraft = getSanitizedDraft()
+      const payload = {
+        quote_data: {
+          ...sanitizedDraft,
+          subtotal: pricing.subtotal,
+          total: pricing.total,
+        },
         subtotal: pricing.subtotal,
+        discount_percent: pricing.discountRate * 100,
         total: pricing.total,
+        customer_name: sanitizedDraft.customerName,
+        customer_email: sanitizedDraft.customerEmail,
+        customer_company: sanitizedDraft.customerCompany,
+        customer_phone: sanitizedDraft.customerPhone,
+        staff_notes: sanitizedDraft.notes,
+        valid_until: sanitizedDraft.expiryDate || null,
       }
 
-      const response = await fetch(mode === 'create' ? '/api/quote-builder/quotes' : `/api/quote-builder/quotes/${quoteId}`, {
-        method: mode === 'create' ? 'POST' : 'PUT',
+      const response = await fetch(mode === 'create' ? '/api/quote-tool/quotes' : `/api/quote-tool/quotes/${quoteId}`, {
+        method: mode === 'create' ? 'POST' : 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       })
+      const result = await response.json().catch(() => null)
 
       if (!response.ok) {
-        throw new Error(`Save request failed with status ${response.status}`)
+        setToast({ text: getSaveErrorText(result) })
+        return
       }
 
-      const result = await response.json()
-      const nextId = result.id || result.quote?.id || quoteId
+      const nextId = getSavedQuoteId(result) ?? quoteId
 
       if (nextId) {
         startTransition(() => {
           router.push(`/quote-tool/${nextId}/edit`)
         })
+      } else {
+        setToast({ text: 'Quote saved, but the response did not include an id.' })
       }
     } catch (caughtError) {
-      setPageError(caughtError instanceof Error ? caughtError.message : 'Failed to save quote')
+      setToast({ text: caughtError instanceof Error ? caughtError.message : 'Failed to save quote' })
     } finally {
       setSaving(false)
     }
@@ -312,6 +386,18 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
           ? 'Build a new staff quote using the native quote-builder workflow.'
           : 'Update quote details, line items, and pricing.'}
       />
+
+      {toast ? (
+        <div className="fixed right-4 top-4 z-50 max-w-md rounded-2xl border border-red-100 bg-white p-4 shadow-xl" role="alert">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-red-600" />
+            <div>
+              <div className="font-medium text-red-900">Could not save quote</div>
+              <div className="mt-1 text-sm text-red-800">{toast.text}</div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {pageError ? (
         <Card className="border-red-100 bg-red-50 p-5">
@@ -539,6 +625,8 @@ export function QuoteForm({ mode, quoteId }: QuoteFormProps) {
           onFieldChange={updateField}
           onSave={handleSaveQuote}
           saving={saving}
+          saveLabel={mode === 'create' ? 'Save draft' : 'Save Quote'}
+          savingLabel={mode === 'create' ? 'Saving draft…' : 'Saving Quote…'}
         />
       </div>
     </div>

@@ -864,7 +864,7 @@ export async function DELETE(
 - On 201 → `router.push('/quote-tool/' + quote.id + '/edit')`.
 - On validation error → toast with issues.
 
-- [ ] **Step 1: Read current new/page + QuoteForm wiring**
+- [x] **Step 1: Read current new/page + QuoteForm wiring**
 
 ```bash
 # Quick read to confirm current save-button handler location.
@@ -872,7 +872,7 @@ export async function DELETE(
 
 Use the Read tool on the two files.
 
-- [ ] **Step 2: Add/replace the save handler**
+- [x] **Step 2: Add/replace the save handler**
 
 In the component that owns form state (`QuoteForm.tsx`), export or surface a `saveDraft` handler:
 
@@ -901,7 +901,7 @@ async function saveDraft() {
 }
 ```
 
-- [ ] **Step 3: Wire button**
+- [x] **Step 3: Wire button**
 
 Connect the existing "Save" button element in `QuoteForm.tsx` to `saveDraft`. If no button exists, add one in the form's action row.
 

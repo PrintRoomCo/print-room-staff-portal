@@ -14,6 +14,8 @@ interface QuoteSummaryProps {
   onFieldChange: <K extends keyof QuoteDraft>(field: K, value: QuoteDraft[K]) => void
   onSave: () => void
   saving: boolean
+  saveLabel?: string
+  savingLabel?: string
 }
 
 const DISCLAIMER_TEXT = 'Prices exclude GST unless shown otherwise. Final pricing remains subject to artwork review, stock confirmation, and freight adjustments.'
@@ -25,6 +27,8 @@ export function QuoteSummary({
   onFieldChange,
   onSave,
   saving,
+  saveLabel = 'Save Quote',
+  savingLabel = 'Saving Quote…',
 }: QuoteSummaryProps) {
   const displayedTotal = draft.includeGst ? pricing.totalInclGst : pricing.total
 
@@ -96,7 +100,7 @@ export function QuoteSummary({
           </Button>
           <Button variant="secondary" onClick={onSave} disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
-            {saving ? 'Saving Quote…' : 'Save Quote'}
+            {saving ? savingLabel : saveLabel}
           </Button>
         </div>
       </Card>
