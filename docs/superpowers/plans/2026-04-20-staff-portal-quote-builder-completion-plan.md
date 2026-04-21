@@ -199,7 +199,7 @@ Append to the `StaffPermission` union (after the existing additions from the inv
 - `{ needApproval: true }` requires `'quotes:approve'` OR admin/super_admin role.
 - General access accepts `'quotes:write'` OR the legacy `'quote-tool'` permission OR admin/super_admin role (so existing staff don't lose access the day this ships).
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 import { NextResponse } from 'next/server'
@@ -265,7 +265,7 @@ export async function requireQuotesStaffAccess(
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ---
 
