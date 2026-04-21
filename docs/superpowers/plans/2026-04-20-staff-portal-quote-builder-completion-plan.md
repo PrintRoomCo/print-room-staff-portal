@@ -94,10 +94,9 @@ alter table staff_quotes
   add column approved_at timestamptz,
   add column approved_by uuid references staff_users(id),
   add column monday_board_id text;
-
-create index staff_quotes_status_idx on staff_quotes (status);
-create index staff_quotes_staff_user_idx on staff_quotes (staff_user_id);
 ```
+
+(Note: no new indexes on `status` or `staff_user_id` — those are already covered by `idx_staff_quotes_status` and `idx_staff_quotes_staff_user` from the original `create_staff_quotes_table` migration.)
 
 - [x] **Step 2: Verify**
 
@@ -110,6 +109,8 @@ select column_name from information_schema.columns
 ```
 
 - [x] **Step 3: Commit** the plan doc.
+
+- [x] **Step 4: Follow-up migration** — applied `20260421_staff_quotes_cleanup_and_status_check` to drop duplicate indexes (`staff_quotes_status_idx`, `staff_quotes_staff_user_idx` — covered by existing `idx_staff_quotes_status` / `idx_staff_quotes_staff_user` from the original table migration) and relax `staff_quotes_status_check` to include the full QuoteStatus union from Task 2 (`created`, `draft`, `sent`, `approved`, `cancelled`, `accepted`, `declined`, `rejected`, `expired`, `archived`, `converted`).
 
 ---
 
