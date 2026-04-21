@@ -137,3 +137,46 @@ export async function PATCH(
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ quote })
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireQuotesStaffAccess()
+  if ('error' in auth) return auth.error
+  const { id } = await params
+
+  let probe = auth.admin
+    .from('staff_quotes')
+    .select('status, staff_user_id, monday_item_id')
+    .eq('id', id)
+  if (!auth.context.isAdmin) probe = probe.eq('staff_user_id', auth.context.staffId)
+
+  const { data: existing, error: existingError } = await probe.single()
+  if (existingError || !existing) {
+    return NextResponse.json({ error: 'Quote not found' }, { status: 404 })
+  }
+
+  if (existing.status === 'approved' && existing.monday_item_id) {
+    return NextResponse.json(
+      {
+        error:
+          'Cannot cancel an approved quote that has been pushed to Monday. Update Monday first.',
+      },
+      { status: 409 }
+    )
+  }
+
+  let update = auth.admin
+    .from('staff_quotes')
+    .update({
+      status: 'cancelled',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+  if (!auth.context.isAdmin) update = update.eq('staff_user_id', auth.context.staffId)
+
+  const { error } = await update
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

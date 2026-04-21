@@ -817,7 +817,7 @@ export async function POST(
 - 409 if already `status='approved'` AND `monday_item_id` is set (production has started). Staff have to handle Monday-side first.
 - Non-admin can only cancel their own.
 
-- [ ] **Step 1: Add DELETE**
+- [x] **Step 1: Add DELETE**
 
 Append to [[id]/route.ts](print-room-staff-portal/src/app/api/quote-tool/quotes/[id]/route.ts):
 
