@@ -351,7 +351,7 @@ export async function GET(
 - `subtotal`, `discount_percent`, `total` must be finite non-negative numbers.
 - `total` within 1¢ of `max(0, subtotal * (1 - discount_percent/100) + orderExtrasTotal)`, where `orderExtrasTotal` is derived from `quote_data.orderExtras` via a 5-line lump-sum approximation (match the `getExtraCost` contract: treat extras as lump-sum NZD by default — enough for validation, not accurate pricing).
 
-- [ ] **Step 1: Write**
+- [x] **Step 1: Write**
 
 ```ts
 export interface QuotePayload {
@@ -418,7 +418,7 @@ export function validateApproveReady(data: QuotePayload): string[] {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ---
 
