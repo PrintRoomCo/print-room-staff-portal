@@ -1,8 +1,11 @@
 import { notFound, redirect } from 'next/navigation'
 import { getSupabaseAdmin, getSupabaseServer } from '@/lib/supabase-server'
 import { withUniformsScope } from '@/lib/products/scope'
+import { rowsToChannelsMap } from '@/lib/products/channels'
 import { ProductEditor } from '@/components/products/ProductEditor'
 import type { BrandRef, CategoryRef, ProductDetail } from '@/types/products'
+
+const DETAIL_SELECT = '*, channels:product_type_activations(product_type,is_active)'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,16 +41,19 @@ export default async function ProductEditPage({
 
   const { id } = await params
   const [productRes, brandsRes, categoriesRes] = await Promise.all([
-    withUniformsScope(admin.from('products').select('*').eq('id', id)).single(),
+    withUniformsScope(admin.from('products').select(DETAIL_SELECT).eq('id', id)).single(),
     admin.from('brands').select('id, name').order('name'),
     admin.from('categories').select('id, name').order('name'),
   ])
 
   if (productRes.error || !productRes.data) notFound()
 
+  const { channels, ...rest } = productRes.data as Record<string, unknown>
+  const product = { ...rest, channels: rowsToChannelsMap(channels) } as ProductDetail
+
   return (
     <ProductEditor
-      product={productRes.data as ProductDetail}
+      product={product}
       brands={(brandsRes.data || []) as BrandRef[]}
       categories={(categoriesRes.data || []) as CategoryRef[]}
     />
