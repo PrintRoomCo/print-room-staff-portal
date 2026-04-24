@@ -316,3 +316,24 @@ UI:
 - Variant grid renders correctly for a product with single-color and multi-color variants.
 - Events log filters round-trip.
 - Non-permissioned staff get 403 on API and redirect on UI.
+
+## 14. Amendment — 2026-04-24 (Chris meeting)
+
+Chris's 2026-04-24 product-editor UX review added one surface that wasn't covered in the 2026-04-20 draft. The data model, RPCs, permissions, and audit log all stay as specified above — this amendment adds an alternative UI entry point into the already-shipped Products sub-app.
+
+### 14.1 Editing inventory from the Products sub-app
+
+Staff can also reach inventory adjustments from the Products sub-app. On any product's edit page (`src/app/(portal)/products/[id]/page.tsx`), a new **Inventory** tab — a peer of Swatches, not nested beneath it — surfaces the same per-org variant grid described in §9.3 here.
+
+**Contract** (unchanged — this is purely a new surface over existing data):
+
+- Same API routes: `/api/inventory/[orgId]/variants/*` and `/api/inventory/[orgId]/variants/[variantId]/adjust` (§4.1).
+- Same `inventory:write` permission gate (§10.1).
+- Same `apply_staff_adjustment` / `release_quote_line` / `adjust_quote_line_delta` RPCs (§7.1).
+- UI rendered through the same `src/components/inventory/...` primitives used on the dedicated `/inventory/[orgId]/[productId]` route; the tab mounts the per-product variant grid scoped via an org-typeahead at the top of the tab (same pattern as §9.1).
+
+**Why separate from Swatches:** Swatches carries the colour → image mapping (driving how a product renders on the customer storefront). Inventory carries per-variant stock counts scoped per-org. They are conceptually distinct even though both pivot on variants — Chris's call, 2026-04-24.
+
+**Scope for this spec:** the contract is unchanged. The code to add the Inventory tab lives in the Products sub-app (already shipped) and is tracked as a follow-up PR separate from the 2026-04-20 inventory implementation plan — the plan's 27 tasks cover the sub-app itself.
+
+**Dedicated Inventory sub-app routes remain authoritative.** The `/inventory`, `/inventory/[orgId]`, `/inventory/[orgId]/[productId]`, and `/inventory/events` routes defined in §4.1 are still the home for cross-org views and the audit log. The Products-editor tab is a convenience entry for the "edit product, then top up stock" flow only.
