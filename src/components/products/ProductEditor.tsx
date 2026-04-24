@@ -9,6 +9,7 @@ import { SwatchesTab } from './tabs/SwatchesTab'
 import { SizesTab } from './tabs/SizesTab'
 import { ImagesTab } from './tabs/ImagesTab'
 import { PricingTab } from './tabs/PricingTab'
+import { InventoryTab } from './tabs/InventoryTab'
 import type { BrandRef, CategoryRef, ChannelsMap, ProductDetail } from '@/types/products'
 
 const TABS: TabDef[] = [
@@ -17,6 +18,7 @@ const TABS: TabDef[] = [
   { key: 'sizes', label: 'Sizes' },
   { key: 'images', label: 'Images' },
   { key: 'pricing', label: 'Pricing' },
+  { key: 'inventory', label: 'Inventory' },
 ]
 
 interface Props {
@@ -110,6 +112,7 @@ export function ProductEditor(props: Props) {
         {active === 'sizes' && <SizesTab productId={product.id} />}
         {active === 'images' && <ImagesTab productId={product.id} />}
         {active === 'pricing' && <PricingTab productId={product.id} />}
+        {active === 'inventory' && <InventoryTab productId={product.id} />}
       </div>
     </div>
   )

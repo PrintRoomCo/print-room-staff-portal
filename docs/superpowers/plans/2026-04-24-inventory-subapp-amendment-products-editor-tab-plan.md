@@ -388,7 +388,7 @@ git commit -m "feat(inventory): InventoryTab component for products editor"
 **Files:**
 - Modify: `src/components/products/ProductEditor.tsx`
 
-- [ ] **Step 3.1: Add the import**
+- [x] **Step 3.1: Add the import** — `import { InventoryTab } from './tabs/InventoryTab'` added after the `PricingTab` import.
 
 At the top of `src/components/products/ProductEditor.tsx`, add alongside the other tab imports (line 7-11):
 
@@ -396,7 +396,7 @@ At the top of `src/components/products/ProductEditor.tsx`, add alongside the oth
 import { InventoryTab } from './tabs/InventoryTab'
 ```
 
-- [ ] **Step 3.2: Extend the `TABS` array**
+- [x] **Step 3.2: Extend the `TABS` array** — `{ key: 'inventory', label: 'Inventory' }` appended after Pricing, matching the "peer of Swatches, visually last" ordering.
 
 Replace the `TABS` array at lines 14-20:
 
@@ -413,7 +413,7 @@ const TABS: TabDef[] = [
 
 Order matters here: **Inventory comes LAST**, per Chris's 2026-04-24 call — a peer of Swatches, not nested, but visually sits after Pricing so the common editing flow (Details → Swatches → Sizes → Images → Pricing) stays front-of-mind and Inventory is visible but out of the way for products without tracked stock.
 
-- [ ] **Step 3.3: Add the tab body switch**
+- [x] **Step 3.3: Add the tab body switch** — `{active === 'inventory' && <InventoryTab productId={product.id} />}` added after the Pricing conditional.
 
 In the tab body at lines 96-113, add one more conditional:
 
@@ -422,7 +422,7 @@ In the tab body at lines 96-113, add one more conditional:
 {active === 'inventory' && <InventoryTab productId={product.id} />}
 ```
 
-- [ ] **Step 3.4: Compile**
+- [x] **Step 3.4: Compile** — `npx tsc --noEmit` silent after all three edits.
 
 ```bash
 npx tsc --noEmit
