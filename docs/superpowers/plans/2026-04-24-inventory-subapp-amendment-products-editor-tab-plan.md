@@ -245,7 +245,7 @@ git commit -m "feat(inventory): GET /api/products/[id]/inventory-by-org for edit
 **Files:**
 - Create: `src/components/products/tabs/InventoryTab.tsx`
 
-- [ ] **Step 2.1: Create the component**
+- [x] **Step 2.1: Create the component** — created at `src/components/products/tabs/InventoryTab.tsx`. Adapter touches: added `let cancelled = false` mount-guard in `useEffect` (matches sibling `PricingTab.tsx` pattern) to prevent post-unmount state updates. `InventoryOrgBundle` imported via `import type` from the route file — resolved cleanly, fallback `src/types/inventory.ts` not needed.
 
 Create `src/components/products/tabs/InventoryTab.tsx`:
 
@@ -364,7 +364,7 @@ Key behaviour:
 - Empty state explicitly points at `/inventory` with an explanation — doesn't just dead-end.
 - Error state surfaces the 403 specifically so non-permissioned staff understand why they can't see anything.
 
-- [ ] **Step 2.2: Compile**
+- [x] **Step 2.2: Compile** — `npx tsc --noEmit` silent. Type-only import from route file resolved without the fallback.
 
 ```bash
 npx tsc --noEmit
@@ -372,7 +372,7 @@ npx tsc --noEmit
 
 Expected: zero errors. If `InventoryOrgBundle` import path fails (e.g. the App Router rewrites `route.ts` export paths), move the type to `src/types/inventory.ts` and import from there instead.
 
-- [ ] **Step 2.3: Commit**
+- [x] **Step 2.3: Commit** — awaiting controller-side commit after Jamie's approval.
 
 ```bash
 git add src/components/products/tabs/InventoryTab.tsx
