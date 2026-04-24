@@ -62,7 +62,7 @@ That's it. Five files to look at, three to change. Small plan.
 
 **Files:** none (verification only).
 
-- [ ] **Step 0.1: Confirm parent plan has shipped**
+- [x] **Step 0.1: Confirm parent plan has shipped** — verified 2026-04-24: schema (`product_variants`, `variant_inventory`, `variant_inventory_events`) live in Supabase; API routes `/api/inventory/*` all present; pages `/inventory`, `/inventory/[orgId]`, `/inventory/[orgId]/[productId]`, `/inventory/events` all live under `(portal)` route group; sidebar entry + `Boxes` import already wired in `Sidebar.tsx`; `inventory_orgs_summary`, `inventory_products_summary`, `inventory_events_search`, `inventory_variants_for_org` RPCs confirmed via existing API routes. Parent plan checkboxes were never ticked, but the code shipped.
 
 Check the task checklist in [docs/superpowers/plans/2026-04-20-staff-portal-inventory-subapp-plan.md](./2026-04-20-staff-portal-inventory-subapp-plan.md). At minimum, these must be complete:
 
@@ -71,7 +71,7 @@ Check the task checklist in [docs/superpowers/plans/2026-04-20-staff-portal-inve
 
 If the parent plan's Task 1 is not checked, stop here. Come back when it is.
 
-- [ ] **Step 0.2: Branch and baseline**
+- [x] **Step 0.2: Branch and baseline** — staying on `feat/product-editor` per Jamie's 2026-04-24 call (no new branch). Working tree clean, `npx tsc --noEmit` silent, clean `npm run build` succeeded with all 4 `/inventory/*` routes compiled as dynamic.
 
 ```bash
 git status
@@ -82,7 +82,7 @@ npm run build
 
 Expected: clean working tree → new branch created → zero TypeScript errors → build succeeds.
 
-- [ ] **Step 0.3: Visual baseline**
+- [ ] **Step 0.3: Visual baseline** — deferred; no UI changes yet, Jamie can capture before Task 4 if a before/after comparison is wanted.
 
 ```bash
 npm run dev
@@ -90,7 +90,7 @@ npm run dev
 
 Visit `/products/[any active id]`. Confirm the ProductEditor renders with 5 tabs (Details, Swatches, Sizes, Images, Pricing) and each tab renders without error. Capture a screenshot. Stop the dev server.
 
-- [ ] **Step 0.4: Baseline commit marker**
+- [x] **Step 0.4: Baseline commit marker** — commit `ae0ff8c` on `feat/product-editor`.
 
 ```bash
 git commit --allow-empty -m "chore: baseline before products inventory-tab amendment"
@@ -105,7 +105,7 @@ git commit --allow-empty -m "chore: baseline before products inventory-tab amend
 **Files:**
 - Create: `src/app/api/products/[id]/inventory-by-org/route.ts`
 
-- [ ] **Step 1.1: Confirm the Inventory sub-app's variant-fetch pattern**
+- [x] **Step 1.1: Confirm the Inventory sub-app's variant-fetch pattern** — existing `/api/inventory/[orgId]/variants/route.ts` uses `inventory_variants_for_org(p_org_id, p_product_id)` RPC returning `VariantRow[]`. Endpoint adapted to a two-phase approach: PostgREST query for tracking orgs, then per-org RPC fan-out.
 
 Before writing a new endpoint, check whether the parent Inventory sub-app already has a per-product variant endpoint (e.g. `/api/inventory/[orgId]/variants?product_id=X`). If yes, the new endpoint can be a thin wrapper that fans out across orgs. If no, write the query directly.
 
@@ -117,14 +117,13 @@ grep -rn "variant_inventory" src/app/api
 
 Adapt the query pattern (joins, column names) to match what's actually in the repo at that point.
 
-- [ ] **Step 1.2: Create the route file**
+- [x] **Step 1.2: Create the route file** — created at `src/app/api/products/[id]/inventory-by-org/route.ts`. Adapted from plan's sample: uses `requireInventoryStaffAccess` (existing helper) instead of the plan's non-existent `requirePermission`; two-phase query (PostgREST tracking orgs + per-org `inventory_variants_for_org` RPC) instead of a single deep-nested select, for parity with the four `(portal)/inventory/*` pages.
 
 Create `src/app/api/products/[id]/inventory-by-org/route.ts`:
 
 ```ts
 import { NextResponse } from 'next/server'
-import { getSupabaseServer } from '@/lib/supabase-server'
-import { requirePermission } from '@/lib/auth/can'
+import { requireInventoryStaffAccess } from '@/lib/inventory/server'
 import type { VariantRow } from '@/components/inventory/VariantGrid'
 
 export interface InventoryOrgBundle {
@@ -140,14 +139,10 @@ export async function GET(
   // Next.js 16 async params — must await per repo's AGENTS.md guidance.
   const { id: productId } = await params
 
-  const auth = await requirePermission('inventory:write')
-  if (!auth.ok) {
-    return NextResponse.json({ orgs: [] }, { status: auth.status })
-  }
+  const auth = await requireInventoryStaffAccess()
+  if ('error' in auth) return auth.error
 
-  const supabase = getSupabaseServer()
-
-  const { data, error } = await supabase
+  const { data, error } = await auth.admin
     .from('variant_inventory')
     .select(
       `
@@ -206,11 +201,11 @@ export async function GET(
 }
 ```
 
-**If `requirePermission` does not exist at `@/lib/auth/can`:** the parent Inventory sub-app plan (§10.1) introduces the `inventory:write` permission key. Use whatever helper the parent plan ships. If the permission helper differs in signature, adapt the auth check — just ensure the route returns 403 for non-permissioned staff.
+**Auth helper note (patched 2026-04-24):** sample above uses the existing `requireInventoryStaffAccess` helper at `@/lib/inventory/server` — returns `{ admin, context } | { error: NextResponse }` with 401 for unauth / 403 for missing `inventory` or `inventory:write` perm / 403 for admin-or-super_admin-or-bust. No new `requirePermission` helper needed. (Original plan referenced a non-existent `@/lib/auth/can` helper; corrected when Task 1 landed.)
 
 **If the `display_order` column on `sizes` doesn't exist:** use whatever ordering column the parent plan uses (`order`, `position`, etc.). Default to `null` if absent and VariantGrid will fall back to insertion order.
 
-- [ ] **Step 1.3: Compile**
+- [x] **Step 1.3: Compile** — `npx tsc --noEmit` silent (zero errors). Verified both by implementer and controller.
 
 ```bash
 npx tsc --noEmit
@@ -218,7 +213,7 @@ npx tsc --noEmit
 
 Expected: zero errors. The `any[]` cast on the query result is intentional — PostgREST join shapes are hard to type without generated types. Leave the cast.
 
-- [ ] **Step 1.4: Smoke-test the endpoint**
+- [ ] **Step 1.4: Smoke-test the endpoint** — deferred to Task 4 where Jamie drives the browser as an authenticated staff user.
 
 ```bash
 npm run dev
@@ -234,7 +229,7 @@ Log out → hit again → expect 401/403 depending on the auth helper.
 
 Stop the dev server.
 
-- [ ] **Step 1.5: Commit**
+- [x] **Step 1.5: Commit** — committed with plan-file ticks + `requirePermission` sample patch bundled in.
 
 ```bash
 git add src/app/api/products/\[id\]/inventory-by-org/route.ts
