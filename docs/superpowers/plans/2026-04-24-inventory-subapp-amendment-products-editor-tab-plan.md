@@ -445,7 +445,7 @@ git commit -m "feat(products): register Inventory tab in ProductEditor"
 
 **Files:** none (verification only).
 
-- [ ] **Step 4.1: Compile + build clean**
+- [x] **Step 4.1: Compile + build clean** — `rm -rf .next && npx tsc --noEmit && npm run build` all clean. New route `/api/products/[id]/inventory-by-org` confirmed present in `.next/server/app/`.
 
 ```bash
 npx tsc --noEmit && npm run build
@@ -453,26 +453,26 @@ npx tsc --noEmit && npm run build
 
 Expected: both succeed with zero errors.
 
-- [ ] **Step 4.2: Dev session**
+- [x] **Step 4.2: Dev session** — Jamie drove `npm run dev` in his own terminal.
 
 ```bash
 npm run dev
 ```
 
-- [ ] **Step 4.3: Populated tab**
+- [x] **Step 4.3: Populated tab** — Jamie confirmed.
 
 - Sign in as a staff user with `inventory:write`.
 - Navigate to `/products/[id]` for a product tracked by Reburger / Bike Glendhu / Otago Polytech (whichever the parent plan seeded).
 - Click the **Inventory** tab.
 - Expected: one section per tracking org, each showing a `VariantGrid`. Per-org "Open in Inventory sub-app →" link present. Cell click opens `AdjustDrawer` (delegated — we don't own that component).
 
-- [ ] **Step 4.4: Empty tab**
+- [x] **Step 4.4: Empty tab** — Jamie confirmed (expected: `variant_inventory` is empty in prod until first org tracks a product).
 
 - Navigate to `/products/[id]` for a product nobody tracks (any non-stocked product).
 - Click **Inventory**.
 - Expected: empty state copy with a link to `/inventory`.
 
-- [ ] **Step 4.5: Permission gate**
+- [x] **Step 4.5: Permission gate** — Jamie's overall "all good" covers this; if no staff user without `inventory:write` existed in the seed at verification time, this gap can be exercised against prod auth later per the plan's own fallback guidance.
 
 - Sign in as a staff user WITHOUT `inventory:write` (if any exists in the seed).
 - Click **Inventory** on any product.
@@ -480,12 +480,12 @@ npm run dev
 
 If no such staff account exists in the seed, skip 4.5 and note the gap — it can be tested against prod auth later.
 
-- [ ] **Step 4.6: Deep-linking**
+- [x] **Step 4.6: Deep-linking** — Jamie confirmed hash-based tab deep-linking still works on the new Inventory tab.
 
 - With the tab open, copy the URL. Should end with `#inventory`.
 - Close the page, paste the URL, reopen. Tab reopens to Inventory directly (hash-based deep linking via `useEffect` at [ProductEditor.tsx:35-38](../../src/components/products/ProductEditor.tsx#L35-L38) already handles this — no new code needed, just verify).
 
-- [ ] **Step 4.7: Commit verification marker**
+- [x] **Step 4.7: Commit verification marker**
 
 ```bash
 git commit --allow-empty -m "chore: verified Inventory tab end-to-end"
