@@ -15,9 +15,6 @@ export function CatalogueSettingsForm({
   const router = useRouter()
   const [name, setName] = useState(catalogue.name)
   const [description, setDescription] = useState(catalogue.description ?? '')
-  const [discountPct, setDiscountPct] = useState(
-    String(catalogue.discount_pct ?? 0),
-  )
   const [isActive, setIsActive] = useState(catalogue.is_active)
   const [busy, setBusy] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
@@ -32,7 +29,6 @@ export function CatalogueSettingsForm({
     const body: Record<string, unknown> = {
       name: name.trim(),
       description: description.trim() === '' ? null : description.trim(),
-      discount_pct: Number(discountPct) || 0,
       is_active: isActive,
     }
     const r = await fetch(`/api/catalogues/${catalogue.id}`, {
@@ -83,18 +79,6 @@ export function CatalogueSettingsForm({
             className="mt-1"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm">
-          Discount %
-          <Input
-            className="mt-1"
-            type="number"
-            step="0.01"
-            min={0}
-            max={100}
-            value={discountPct}
-            onChange={(e) => setDiscountPct(e.target.value)}
           />
         </label>
         <label className="flex items-center gap-2 text-sm">

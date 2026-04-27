@@ -43,7 +43,7 @@ export default async function CataloguesPage({
   let q = admin
     .from('b2b_catalogues')
     .select(
-      'id, name, organization_id, discount_pct, is_active, created_at, organizations!inner(name), items:b2b_catalogue_items(count)',
+      'id, name, organization_id, is_active, created_at, organizations!inner(name), items:b2b_catalogue_items(count)',
       { count: 'exact' },
     )
     .order('created_at', { ascending: false })

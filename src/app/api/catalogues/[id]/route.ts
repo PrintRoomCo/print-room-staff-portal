@@ -33,7 +33,7 @@ export async function PATCH(
   const body = await request.json()
 
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  for (const k of ['name', 'description', 'discount_pct', 'is_active']) {
+  for (const k of ['name', 'description', 'is_active']) {
     if (k in body) patch[k] = body[k]
   }
   const { error } = await admin.from('b2b_catalogues').update(patch).eq('id', id)

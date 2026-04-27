@@ -7,7 +7,6 @@ type Row = {
   id: string
   name: string
   organization_id: string
-  discount_pct: number
   is_active: boolean
   created_at: string
   organizations: { name: string } | { name: string }[]
@@ -94,7 +93,6 @@ export function CataloguesTable({
             <th className="px-3 py-2">Name</th>
             <th className="px-3 py-2">Organization</th>
             <th className="px-3 py-2">Items</th>
-            <th className="px-3 py-2">Discount</th>
             <th className="px-3 py-2">Status</th>
             <th className="px-3 py-2">Created</th>
           </tr>
@@ -102,7 +100,7 @@ export function CataloguesTable({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-3 py-6 text-center text-gray-500">
+              <td colSpan={5} className="px-3 py-6 text-center text-gray-500">
                 No catalogues yet.
               </td>
             </tr>
@@ -121,7 +119,6 @@ export function CataloguesTable({
                   </td>
                   <td className="px-3 py-2">{orgName ?? '—'}</td>
                   <td className="px-3 py-2">{itemsCount}</td>
-                  <td className="px-3 py-2">{Number(r.discount_pct).toFixed(2)}%</td>
                   <td className="px-3 py-2">
                     <span
                       className={`rounded px-2 py-0.5 text-xs ${

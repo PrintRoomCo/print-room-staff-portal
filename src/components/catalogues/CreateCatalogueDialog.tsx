@@ -19,7 +19,6 @@ export function CreateCatalogueDialog({
   const [orgId, setOrgId] = useState('')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [discountPct, setDiscountPct] = useState(0)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -41,7 +40,6 @@ export function CreateCatalogueDialog({
         organization_id: orgId,
         name,
         description: description || undefined,
-        discount_pct: discountPct,
         product_ids: productIds.length > 0 ? productIds : undefined,
       }),
     })
@@ -94,17 +92,6 @@ export function CreateCatalogueDialog({
               className="mt-1"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-            />
-          </label>
-          <label className="block text-sm">
-            Discount %
-            <Input
-              className="mt-1"
-              type="number"
-              min={0}
-              max={100}
-              value={discountPct}
-              onChange={(e) => setDiscountPct(Number(e.target.value) || 0)}
             />
           </label>
           {error && <div className="text-sm text-red-600">{error}</div>}

@@ -10,7 +10,6 @@ export type CatalogueEditorCatalogue = {
   organization_id: string
   name: string
   description: string | null
-  discount_pct: number
   is_active: boolean
 }
 
@@ -57,8 +56,7 @@ export function CatalogueEditor({
     <div className="p-6">
       <h1 className="text-2xl font-semibold">{catalogue.name}</h1>
       <p className="text-sm text-gray-500">
-        {organization?.name ?? 'Unknown org'} · Discount{' '}
-        {Number(catalogue.discount_pct).toFixed(2)}%
+        {organization?.name ?? 'Unknown org'}
         {!catalogue.is_active && ' · Inactive'}
       </p>
       <nav className="mt-4 flex gap-4 border-b">

@@ -3,7 +3,6 @@ export type CatalogueRow = {
   organization_id: string
   name: string
   description: string | null
-  discount_pct: number
   is_active: boolean
   created_at: string
   created_by_user_id: string | null
@@ -38,7 +37,6 @@ export type CreateCatalogueBody = {
   organization_id: string
   name: string
   description?: string
-  discount_pct?: number
   product_ids?: string[]
 }
 

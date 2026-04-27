@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
       organization_id: body.organization_id,
       name: body.name,
       description: body.description ?? null,
-      discount_pct: body.discount_pct ?? 0,
       created_by_user_id: context.userId,
     })
     .select('id')
@@ -86,7 +85,7 @@ export async function GET(request: NextRequest) {
 
   let q = admin
     .from('b2b_catalogues')
-    .select('id, organization_id, name, discount_pct, is_active, created_at, items:b2b_catalogue_items(count)')
+    .select('id, organization_id, name, is_active, created_at, items:b2b_catalogue_items(count)')
     .order('created_at', { ascending: false })
   if (orgId) q = q.eq('organization_id', orgId)
 
