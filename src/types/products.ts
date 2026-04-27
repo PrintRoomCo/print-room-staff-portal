@@ -110,6 +110,8 @@ export interface PricingTierRow {
 export type ShopifyLiveFilter = 'all' | 'live' | 'not-live'
 export type ActiveFilter = 'all' | 'active' | 'inactive'
 
+export type B2BOnlyFilter = 'master' | 'both' | 'only'
+
 export interface ProductListFilters {
   search: string
   brand_id: string | null
@@ -119,6 +121,7 @@ export interface ProductListFilters {
   tags_filter: string[]
   shopify: ShopifyLiveFilter
   active: ActiveFilter
+  b2b_only: B2BOnlyFilter
   page: number
 }
 

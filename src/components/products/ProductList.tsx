@@ -6,6 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ProductFilters } from './ProductFilters'
 import { ProductRow } from './ProductRow'
+import { B2BOnlyFilter } from './B2BOnlyFilter'
+import { ProductsSelectionBar } from './ProductsSelectionBar'
 import {
   PRODUCTS_PER_PAGE,
   defaultListFilters,
@@ -35,6 +37,7 @@ export function ProductList({ initial, brands, categories }: Props) {
   const [products, setProducts] = useState<ProductSummary[]>(initial.products)
   const [total, setTotal] = useState<number>(initial.total)
   const [loading, setLoading] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const didMount = useRef(false)
   const [, startTransition] = useTransition()
 
@@ -79,6 +82,13 @@ export function ProductList({ initial, brands, categories }: Props) {
     applyFilters({ ...filters, page })
   }
 
+  function handleSelectChange(id: string, next: boolean) {
+    setSelectedIds(prev => {
+      if (next) return prev.includes(id) ? prev : [...prev, id]
+      return prev.filter(x => x !== id)
+    })
+  }
+
   async function handleToggleActive(id: string, next: boolean) {
     const res = await fetch(`/api/products/${id}/toggle-active`, { method: 'POST' })
     if (!res.ok) {
@@ -110,6 +120,11 @@ export function ProductList({ initial, brands, categories }: Props) {
         onClear={() => applyFilters(defaultListFilters())}
       />
 
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-gray-600">B2B visibility</span>
+        <B2BOnlyFilter />
+      </div>
+
       {loading && <p className="text-xs text-gray-500">Loading...</p>}
 
       {products.length === 0 ? (
@@ -126,7 +141,13 @@ export function ProductList({ initial, brands, categories }: Props) {
       ) : (
         <div className="flex flex-col gap-2">
           {products.map(p => (
-            <ProductRow key={p.id} product={p} onToggleActive={handleToggleActive} />
+            <ProductRow
+              key={p.id}
+              product={p}
+              onToggleActive={handleToggleActive}
+              selected={selectedIds.includes(p.id)}
+              onSelectChange={handleSelectChange}
+            />
           ))}
         </div>
       )}
@@ -156,6 +177,11 @@ export function ProductList({ initial, brands, categories }: Props) {
           </Button>
         </div>
       )}
+
+      <ProductsSelectionBar
+        selectedIds={selectedIds}
+        onClear={() => setSelectedIds([])}
+      />
     </div>
   )
 }

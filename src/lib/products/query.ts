@@ -3,6 +3,7 @@ import { withUniformsScope } from './scope'
 import { GARMENT_FAMILIES, type GarmentFamily } from './garment-families'
 import type {
   ActiveFilter,
+  B2BOnlyFilter,
   ProductListFilters,
   ShopifyLiveFilter,
 } from '@/types/products'
@@ -23,6 +24,7 @@ export function defaultListFilters(): ProductListFilters {
     tags_filter: [],
     shopify: 'all',
     active: 'all',
+    b2b_only: 'master',
     page: 1,
   }
 }
@@ -68,6 +70,10 @@ export function parseListSearchParams(
   const active: ActiveFilter =
     activeRaw === 'active' || activeRaw === 'inactive' ? activeRaw : 'all'
 
+  const b2bRaw = get('b2b_only')
+  const b2b_only: B2BOnlyFilter =
+    b2bRaw === 'both' || b2bRaw === 'only' ? b2bRaw : 'master'
+
   const pageRaw = parseInt(get('page') || '1', 10)
   const page = Number.isFinite(pageRaw) && pageRaw > 0 ? pageRaw : 1
 
@@ -80,6 +86,7 @@ export function parseListSearchParams(
     tags_filter: tagsFilter,
     shopify,
     active,
+    b2b_only,
     page,
   }
 }
@@ -94,6 +101,7 @@ export function listFiltersToSearchParams(filters: ProductListFilters): URLSearc
   for (const tag of filters.tags_filter) sp.append('tag', tag)
   if (filters.shopify !== 'all') sp.set('shopify', filters.shopify)
   if (filters.active !== 'all') sp.set('active', filters.active)
+  if (filters.b2b_only !== 'master') sp.set('b2b_only', filters.b2b_only)
   if (filters.page > 1) sp.set('page', String(filters.page))
   return sp
 }
@@ -131,6 +139,9 @@ export function buildListQuery(client: SupabaseClient<any, any, any>, filters: P
 
   if (filters.active === 'active') query = query.eq('is_active', true)
   else if (filters.active === 'inactive') query = query.eq('is_active', false)
+
+  if (filters.b2b_only === 'master') query = query.eq('is_b2b_only', false)
+  else if (filters.b2b_only === 'only') query = query.eq('is_b2b_only', true)
 
   return query
 }

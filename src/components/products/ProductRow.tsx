@@ -12,9 +12,11 @@ import type { ProductSummary } from '@/types/products'
 interface Props {
   product: ProductSummary
   onToggleActive: (id: string, next: boolean) => Promise<void>
+  selected?: boolean
+  onSelectChange?: (id: string, next: boolean) => void
 }
 
-export function ProductRow({ product, onToggleActive }: Props) {
+export function ProductRow({ product, onToggleActive, selected, onSelectChange }: Props) {
   const [busy, setBusy] = useState(false)
 
   async function handleToggle() {
@@ -28,6 +30,15 @@ export function ProductRow({ product, onToggleActive }: Props) {
 
   return (
     <div className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+      {onSelectChange && (
+        <input
+          type="checkbox"
+          className="h-4 w-4 shrink-0 rounded border-gray-300"
+          aria-label={`Select ${product.name}`}
+          checked={!!selected}
+          onChange={(e) => onSelectChange(product.id, e.target.checked)}
+        />
+      )}
       <div className="w-16 h-16 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0">
         {product.image_url ? (
           <Image
