@@ -13,6 +13,8 @@ export type StaffPermission =
   | 'products'
   | 'inventory'
   | 'inventory:write'
+  | 'catalogues'
+  | 'catalogues:write'
   | 'orders'
   | 'orders:write'
 
