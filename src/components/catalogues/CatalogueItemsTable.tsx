@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { AddFromMasterDialog } from './AddFromMasterDialog'
 import { CreateB2BOnlyItemDialog } from './CreateB2BOnlyItemDialog'
+import { OverrideFlag } from './OverrideFlag'
 import type { CatalogueEditorItem } from './CatalogueEditor'
 
 const DECORATION_TYPES = ['N/A', 'Screen print', 'Heat press', 'Super colour']
@@ -117,84 +118,132 @@ export function CatalogueItemsTable({
                     <div className="text-xs text-gray-500">{it.source.sku}</div>
                   )}
                 </td>
-                <td
-                  className="px-2 py-2 text-gray-500"
-                  title="Edit on master product"
-                >
-                  ${Number(it.source.base_cost).toFixed(2)}
+                <td className="px-2 py-2 text-gray-500">
+                  <div className="flex items-center gap-2">
+                    <OverrideFlag state="locked" />
+                    <span>${Number(it.source.base_cost).toFixed(2)}</span>
+                  </div>
+                </td>
+                <td className="px-2 py-2">
+                  <div className="flex items-center gap-2">
+                    <OverrideFlag
+                      state={
+                        it.markup_multiplier_override == null
+                          ? 'inherited'
+                          : 'overridden'
+                      }
+                      masterValueFormatted={Number(
+                        it.source.markup_multiplier,
+                      ).toFixed(3)}
+                    />
+                    <input
+                      aria-label="Markup multiplier"
+                      type="number"
+                      step="0.001"
+                      defaultValue={
+                        it.markup_multiplier_override ??
+                        it.source.markup_multiplier
+                      }
+                      className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
+                      onBlur={(e) => {
+                        const v =
+                          e.target.value === '' ? null : Number(e.target.value)
+                        patchItem(it.id, { markup_multiplier_override: v })
+                      }}
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-2">
+                  <div className="flex items-center gap-2">
+                    <OverrideFlag
+                      state={
+                        it.decoration_type_override == null
+                          ? 'inherited'
+                          : 'overridden'
+                      }
+                    />
+                    <select
+                      aria-label="Decoration type"
+                      className="rounded border border-gray-300 px-2 py-1 text-sm"
+                      value={it.decoration_type_override ?? ''}
+                      onChange={(e) =>
+                        patchItem(it.id, {
+                          decoration_type_override: e.target.value || null,
+                        })
+                      }
+                    >
+                      <option value="">— inherit —</option>
+                      {DECORATION_TYPES.map((dt) => (
+                        <option key={dt} value={dt}>
+                          {dt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </td>
+                <td className="px-2 py-2">
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const masterDecPrice = it.source.decoration_price
+                      const overrideSet = it.decoration_price_override != null
+                      if (!overrideSet && masterDecPrice == null) return null
+                      return (
+                        <OverrideFlag
+                          state={overrideSet ? 'overridden' : 'inherited'}
+                          masterValueFormatted={
+                            masterDecPrice != null
+                              ? `$${Number(masterDecPrice).toFixed(2)}`
+                              : undefined
+                          }
+                        />
+                      )
+                    })()}
+                    <input
+                      aria-label="Decoration price"
+                      type="number"
+                      step="0.01"
+                      defaultValue={
+                        it.decoration_price_override ??
+                        it.source.decoration_price ??
+                        ''
+                      }
+                      className="w-24 rounded border border-gray-300 px-2 py-1 text-sm"
+                      onBlur={(e) =>
+                        patchItem(it.id, {
+                          decoration_price_override:
+                            e.target.value === ''
+                              ? null
+                              : Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
+                </td>
+                <td className="px-2 py-2">
+                  <div className="flex items-center gap-2">
+                    {it.shipping_cost_override != null && (
+                      <OverrideFlag state="overridden" />
+                    )}
+                    <input
+                      aria-label="Shipping cost"
+                      type="number"
+                      step="0.01"
+                      defaultValue={it.shipping_cost_override ?? ''}
+                      className="w-24 rounded border border-gray-300 px-2 py-1 text-sm"
+                      onBlur={(e) =>
+                        patchItem(it.id, {
+                          shipping_cost_override:
+                            e.target.value === ''
+                              ? null
+                              : Number(e.target.value),
+                        })
+                      }
+                    />
+                  </div>
                 </td>
                 <td className="px-2 py-2">
                   <input
-                    type="number"
-                    step="0.001"
-                    defaultValue={
-                      it.markup_multiplier_override ??
-                      it.source.markup_multiplier
-                    }
-                    className="w-20 rounded border border-gray-300 px-2 py-1 text-sm"
-                    onBlur={(e) => {
-                      const v =
-                        e.target.value === '' ? null : Number(e.target.value)
-                      patchItem(it.id, { markup_multiplier_override: v })
-                    }}
-                  />
-                </td>
-                <td className="px-2 py-2">
-                  <select
-                    className="rounded border border-gray-300 px-2 py-1 text-sm"
-                    value={it.decoration_type_override ?? ''}
-                    onChange={(e) =>
-                      patchItem(it.id, {
-                        decoration_type_override: e.target.value || null,
-                      })
-                    }
-                  >
-                    <option value="">— inherit —</option>
-                    {DECORATION_TYPES.map((dt) => (
-                      <option key={dt} value={dt}>
-                        {dt}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-2 py-2">
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={
-                      it.decoration_price_override ??
-                      it.source.decoration_price ??
-                      ''
-                    }
-                    className="w-24 rounded border border-gray-300 px-2 py-1 text-sm"
-                    onBlur={(e) =>
-                      patchItem(it.id, {
-                        decoration_price_override:
-                          e.target.value === ''
-                            ? null
-                            : Number(e.target.value),
-                      })
-                    }
-                  />
-                </td>
-                <td className="px-2 py-2">
-                  <input
-                    type="number"
-                    step="0.01"
-                    defaultValue={it.shipping_cost_override ?? ''}
-                    className="w-24 rounded border border-gray-300 px-2 py-1 text-sm"
-                    onBlur={(e) =>
-                      patchItem(it.id, {
-                        shipping_cost_override:
-                          e.target.value === ''
-                            ? null
-                            : Number(e.target.value),
-                      })
-                    }
-                  />
-                </td>
-                <td className="px-2 py-2">
-                  <input
+                    aria-label="Item active"
                     type="checkbox"
                     defaultChecked={it.is_active}
                     onChange={(e) =>
