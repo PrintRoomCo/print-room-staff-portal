@@ -101,7 +101,7 @@ export function CatalogueEditor({
                 className="mt-3 inline-block text-blue-600 underline"
                 href={`/b2b-accounts/${organization.id}`}
               >
-                Open b2b account → (route to be built in sibling spec)
+                Open B2B account →
               </a>
             )}
           </div>

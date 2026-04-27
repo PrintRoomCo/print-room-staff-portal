@@ -11,12 +11,14 @@ type Org = { id: string; name: string }
 export function CreateCatalogueDialog({
   productIds,
   onClose,
+  defaultOrgId,
 }: {
   productIds: string[]
   onClose: () => void
+  defaultOrgId?: string
 }) {
   const [orgs, setOrgs] = useState<Org[]>([])
-  const [orgId, setOrgId] = useState('')
+  const [orgId, setOrgId] = useState(defaultOrgId ?? '')
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [busy, setBusy] = useState(false)
