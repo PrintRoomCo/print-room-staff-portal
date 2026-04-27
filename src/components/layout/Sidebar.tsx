@@ -16,6 +16,7 @@ import {
   FilePlus,
   List,
   Library,
+  BookOpen,
   ClipboardList,
   BarChart3,
   Bot,
@@ -103,6 +104,15 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Workwear', href: '/products?channel=workwear', icon: Package },
       { label: 'Pre-order', href: '/products?channel=preorder', icon: Package },
       { label: 'B2B', href: '/products?channel=b2b', icon: Package },
+    ],
+  },
+  {
+    id: 'catalogues',
+    label: 'Catalogues',
+    icon: BookOpen,
+    permission: 'catalogues',
+    items: [
+      { label: 'Catalogues', href: '/catalogues', icon: BookOpen },
     ],
   },
   {
