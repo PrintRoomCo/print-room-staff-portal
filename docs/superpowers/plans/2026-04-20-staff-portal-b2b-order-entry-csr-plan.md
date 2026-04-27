@@ -1553,3 +1553,820 @@ select count(*) from quotes where idempotency_key = '<IDK>';
 
 Spec #4 (Customer B2B Checkout MVP) should reference this plan path:
 `print-room-staff-portal/docs/superpowers/plans/2026-04-20-staff-portal-b2b-order-entry-csr-plan.md`
+
+---
+
+# Reconciliation patch — 2026-04-29 (B7)
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this section task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Bring the shipped CSR sub-app into alignment with sub-app #3 (B2B catalogues + `is_b2b_only` items), unify pricing on `effective_unit_price` so staff and customer surfaces always agree, fix the customer_code prefetch bug, and replace the hard-coded customer_email placeholder.
+
+**Architecture:** Six surgical code edits (≤30 LOC each) in `print-room-staff-portal` and `print-room-portal`. **No schema migrations** — `effective_unit_price`, `catalogue_unit_price`, `b2b_catalogue_items`, `b2b_catalogues`, and `products.is_b2b_only` already exist on the live DB (verified 2026-04-29). Then a manual UI walkthrough plus memory updates. Delta document at [docs/superpowers/notes/2026-04-29-csr-spec-on-disk-delta.md](../notes/2026-04-29-csr-spec-on-disk-delta.md).
+
+**Tech Stack:** Next.js 16 (App Router, async `params`), Supabase Postgres + RPCs, TypeScript. No new dependencies.
+
+**Why this stack (4-axis):**
+- **Rendering & data flow:** staff-only authenticated form (per-request SSR for the page shell, client component owns form state, API routes for typeahead + pricing + submit). Unchanged from original CSR build.
+- **Caching:** none. Pricing must be live; catalogue lookups must reflect today's catalogue state. `force-dynamic` on the order pages.
+- **Performance budget:** typeahead under 250ms debounce, pricing under 300ms debounce — already within budget; this patch doesn't change perf characteristics.
+- **Ecommerce patterns:** pricing engine canonicalised on `effective_unit_price` (catalogue → `catalogue_unit_price` → `get_unit_price` fallback); inventory reservation via `reserve_quote_line` (unchanged); cart state is the form (unchanged).
+
+**Pricing decision (locked 2026-04-29):** `effective_unit_price` is the single canonical price function for staff CSR + customer checkout. Never call `get_unit_price` directly from app code — it bypasses catalogues. Catalogue prices are absolute (no tier discount applied on top), per the 2026-04-27 amendment that removed `discount_pct`.
+
+---
+
+## Task A1: CSR pricing endpoint switches to `effective_unit_price`
+
+**Files:**
+- Modify: `print-room-staff-portal/src/app/api/pricing/quote-line/route.ts`
+
+**Acceptance:**
+- `POST /api/pricing/quote-line` calls `effective_unit_price` not `get_unit_price`.
+- Response shape unchanged (`unit_price`, `total`, `tier_level`, `bracket`).
+- For PRT (org `ee155266…`) + a catalogue product (e.g. one of the 3 master items in `ba207fd4…`): returns the catalogue price, not the master tier price.
+
+- [ ] **Step 1: Edit the RPC name**
+
+In `print-room-staff-portal/src/app/api/pricing/quote-line/route.ts`, change line 28 from:
+
+```ts
+    auth.admin.rpc('get_unit_price', {
+      p_product_id: product_id,
+      p_org_id: organization_id,
+      p_qty: quantity,
+    }),
+```
+
+to:
+
+```ts
+    auth.admin.rpc('effective_unit_price', {
+      p_product_id: product_id,
+      p_org_id: organization_id,
+      p_qty: quantity,
+    }),
+```
+
+- [ ] **Step 2: Type-check**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal && npx tsc --noEmit
+```
+
+Expected: clean.
+
+- [ ] **Step 3: 🟡 SQL smoke test (read-only)**
+
+Present this query in chat for approval, then run via `mcp__claude_ai_Supabase__execute_sql`:
+
+```sql
+-- PRT + a catalogue master item: effective_unit_price should differ from get_unit_price.
+select
+  p.name,
+  get_unit_price(p.id, 'ee155266-200c-4b73-8dbd-be385db3e5b0', 50) as via_get,
+  effective_unit_price(p.id, 'ee155266-200c-4b73-8dbd-be385db3e5b0', 50) as via_effective
+from b2b_catalogue_items ci
+join b2b_catalogues c on c.id = ci.catalogue_id
+join products p on p.id = ci.source_product_id
+where c.organization_id = 'ee155266-200c-4b73-8dbd-be385db3e5b0'
+  and c.is_active and ci.is_active
+  and p.is_b2b_only = false
+limit 3;
+```
+
+Expected: at least one row where `via_effective ≠ via_get` (proves catalogue branch fires). If both equal for every row, catalogue has no per-item pricing tiers / markup overrides — flag and proceed (the swap is still correct, no behavioural divergence today).
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal
+git add src/app/api/pricing/quote-line/route.ts
+git commit -m "fix(csr): use effective_unit_price for catalogue-aware staff pricing
+
+Catalogue items shipped with sub-app #3 on 2026-04-27 — staff CSR was
+still calling get_unit_price, returning master tier prices for orgs
+with active catalogues. Customer /shop already uses effective_unit_price
+so prices diverged silently. Single canonical price function from now on."
+```
+
+---
+
+## Task A2: Customer checkout submit switches to `effective_unit_price`
+
+**Files:**
+- Modify: `print-room-portal/lib/checkout/submit.ts`
+
+**Why:** Customer-portal `submit.ts` re-prices every line on the server (line 105) using `get_unit_price` — same bug as A1 but on the customer side. Customer sees catalogue prices in `/shop`, then gets repriced to non-catalogue at submit. Already wrappered as `effectiveUnitPrice` in `lib/shop/effective-price.ts`; reuse it.
+
+**Acceptance:**
+- `submitCustomerOrder` no longer references `'get_unit_price'`.
+- Submitted line `unit_price` matches what `/shop` showed.
+
+- [ ] **Step 1: Edit the repricing block**
+
+In `print-room-portal/lib/checkout/submit.ts`, change the block at lines 102-112 from:
+
+```ts
+  // 2. Re-price every line on the server — ignore any client-sent prices.
+  const repriced = await Promise.all(
+    input.lines.map(async (l) => {
+      const { data: unit } = await admin.rpc('get_unit_price', {
+        p_product_id: l.product_id,
+        p_org_id: input.context.organizationId,
+        p_qty: l.qty,
+      })
+      return { ...l, unit_price: Number(unit ?? 0) }
+    })
+  )
+```
+
+to:
+
+```ts
+  // 2. Re-price every line on the server — ignore any client-sent prices.
+  // Uses effective_unit_price so catalogue-scoped orgs get catalogue prices
+  // (consistent with /shop), falling back to get_unit_price for global B2B.
+  const repriced = await Promise.all(
+    input.lines.map(async (l) => {
+      const { data: unit } = await admin.rpc('effective_unit_price', {
+        p_product_id: l.product_id,
+        p_org_id: input.context.organizationId,
+        p_qty: l.qty,
+      })
+      return { ...l, unit_price: Number(unit ?? 0) }
+    })
+  )
+```
+
+- [ ] **Step 2: Type-check**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-portal && npx tsc --noEmit
+```
+
+Expected: clean.
+
+- [ ] **Step 3: Commit**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-portal
+git add lib/checkout/submit.ts
+git commit -m "fix(checkout): use effective_unit_price on submit repricing
+
+Customers saw catalogue prices in /shop but got repriced to non-catalogue
+master tiers at submit time, because submit.ts called get_unit_price
+directly. effective_unit_price keeps the shop view and the order
+ledger in sync."
+```
+
+---
+
+## Task B1: Product search filters `is_b2b_only` + adds optional catalogue scope
+
+**Files:**
+- Modify: `print-room-staff-portal/src/app/api/products/search/route.ts`
+
+**Acceptance:**
+- Without `?organization_id`: returns global products with `is_active=true AND is_b2b_only=false` only.
+- With `?organization_id=X` where X has an active catalogue: returns the union of (a) catalogue items (with `via_catalogue: true` flag) and (b) global non-B2B-only products (`via_catalogue: false`), deduplicated on `product_id`.
+- With `?organization_id=X` where X has no active catalogue: returns global non-B2B-only products only.
+- Response shape: `{ products: Array<{ id, name, image_url, via_catalogue: boolean }> }`.
+
+- [ ] **Step 1: Replace the GET handler**
+
+Replace the entire body of `print-room-staff-portal/src/app/api/products/search/route.ts` with:
+
+```ts
+import { NextResponse } from 'next/server'
+import { requireInventoryStaffAccess } from '@/lib/inventory/server'
+
+interface ProductRow {
+  id: string
+  name: string
+  image_url: string | null
+}
+
+interface CatalogueItemRow {
+  source_product_id: string | null
+  products: ProductRow | ProductRow[] | null
+}
+
+function pickOne<T>(v: T | T[] | null | undefined): T | null {
+  if (v == null) return null
+  return Array.isArray(v) ? v[0] ?? null : v
+}
+
+export async function GET(request: Request) {
+  const auth = await requireInventoryStaffAccess()
+  if ('error' in auth) return auth.error
+
+  const url = new URL(request.url)
+  const q = url.searchParams.get('q')?.trim() ?? ''
+  const organizationId = url.searchParams.get('organization_id')
+  if (q.length < 2) {
+    return NextResponse.json({ products: [] })
+  }
+
+  // Catalogue branch: if org has an active catalogue, fetch its items first.
+  let catalogueProducts: Array<ProductRow & { via_catalogue: true }> = []
+  if (organizationId) {
+    const { data: cat } = await auth.admin
+      .from('b2b_catalogues')
+      .select('id')
+      .eq('organization_id', organizationId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (cat?.id) {
+      const { data: items } = await auth.admin
+        .from('b2b_catalogue_items')
+        .select(
+          'source_product_id, products!b2b_catalogue_items_source_product_id_fkey ( id, name, image_url )',
+        )
+        .eq('catalogue_id', cat.id)
+        .eq('is_active', true)
+
+      const rows = (items ?? []) as unknown as CatalogueItemRow[]
+      catalogueProducts = rows
+        .map((r) => pickOne(r.products))
+        .filter((p): p is ProductRow => p != null && p.name.toLowerCase().includes(q.toLowerCase()))
+        .map((p) => ({ ...p, via_catalogue: true as const }))
+    }
+  }
+
+  // Global branch: products that are NOT b2b-only.
+  const { data: globals, error } = await auth.admin
+    .from('products')
+    .select('id, name, image_url')
+    .eq('is_active', true)
+    .eq('is_b2b_only', false)
+    .ilike('name', `%${q}%`)
+    .order('name', { ascending: true })
+    .limit(20)
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // Dedupe: catalogue items take precedence (they carry via_catalogue flag).
+  const seen = new Set(catalogueProducts.map((p) => p.id))
+  const globalDecorated = (globals ?? [])
+    .filter((p) => !seen.has(p.id))
+    .map((p) => ({ ...p, via_catalogue: false as const }))
+
+  const combined = [...catalogueProducts, ...globalDecorated]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 20)
+
+  return NextResponse.json({ products: combined })
+}
+```
+
+- [ ] **Step 2: Type-check**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal && npx tsc --noEmit
+```
+
+Expected: clean.
+
+- [ ] **Step 3: 🟡 SQL smoke test (read-only)**
+
+Present then run:
+
+```sql
+-- 1. Confirm catalogue → product join works for PRT
+select count(*) as catalogue_items_for_prt
+from b2b_catalogue_items ci
+join b2b_catalogues c on c.id = ci.catalogue_id
+where c.organization_id = 'ee155266-200c-4b73-8dbd-be385db3e5b0'
+  and c.is_active and ci.is_active;
+-- expect ≥3 (PRT Demo Catalogue has 4 items per memory)
+
+-- 2. Confirm there's at least one is_b2b_only=true product (the synthetic PRT sticker)
+select id, name, is_b2b_only from products
+where is_b2b_only = true
+limit 5;
+-- expect ≥1 row (PRT Bespoke Logo Sticker)
+
+-- 3. Confirm there's at least one is_b2b_only=false product matching a common term
+select id, name, is_b2b_only from products
+where is_active = true and is_b2b_only = false and name ilike '%tee%'
+limit 5;
+-- expect ≥1 row (Basic Tee, etc.)
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal
+git add src/app/api/products/search/route.ts
+git commit -m "feat(products-search): catalogue-scoped product typeahead + b2b-only filter
+
+Sub-app #3 added is_b2b_only synthetic-master products; CSR's typeahead
+was leaking them globally. Now: opt-in catalogue scope via
+?organization_id, response carries via_catalogue flag for UI display,
+b2b-only items only surface when present in the org's active catalogue."
+```
+
+---
+
+## Task B2: `LineItemRow` passes `organizationId` to product search + shows catalogue indicator
+
+**Files:**
+- Modify: `print-room-staff-portal/src/components/orders/LineItemRow.tsx`
+
+**Acceptance:**
+- Product search call appends `&organization_id=X` when organizationId is set.
+- Dropdown rows show a small "Catalogue" pill when `via_catalogue=true`.
+- `ProductSearchResult` type updated with `via_catalogue?: boolean`.
+
+- [ ] **Step 1: Update the result type**
+
+In `print-room-staff-portal/src/components/orders/LineItemRow.tsx`, change lines 21-25 from:
+
+```ts
+interface ProductSearchResult {
+  id: string
+  name: string
+  image_url?: string | null
+}
+```
+
+to:
+
+```ts
+interface ProductSearchResult {
+  id: string
+  name: string
+  image_url?: string | null
+  via_catalogue?: boolean
+}
+```
+
+- [ ] **Step 2: Pass `organization_id` in the search URL**
+
+Change lines 73-76 from:
+
+```ts
+        const r = await fetch(
+          `/api/products/search?q=${encodeURIComponent(search)}`,
+        )
+```
+
+to:
+
+```ts
+        const params = new URLSearchParams({ q: search })
+        if (organizationId) params.set('organization_id', organizationId)
+        const r = await fetch(`/api/products/search?${params.toString()}`)
+```
+
+- [ ] **Step 3: Render the catalogue pill in dropdown rows**
+
+Find the dropdown rendering block (around lines 305-318). Replace the single text rendering inside `<button>`:
+
+```tsx
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => selectProduct(p)}
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                    >
+                      {p.name}
+                    </button>
+```
+
+with:
+
+```tsx
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => selectProduct(p)}
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm flex items-center justify-between gap-2"
+                    >
+                      <span>{p.name}</span>
+                      {p.via_catalogue && (
+                        <span className="inline-block bg-indigo-100 text-indigo-800 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                          Catalogue
+                        </span>
+                      )}
+                    </button>
+```
+
+- [ ] **Step 4: Type-check**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal && npx tsc --noEmit
+```
+
+Expected: clean.
+
+- [ ] **Step 5: Commit**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal
+git add src/components/orders/LineItemRow.tsx
+git commit -m "feat(csr-lineitem): scope product typeahead by org + show catalogue pill
+
+Pairs with B1 — passes organization_id to /api/products/search so
+catalogue-scoped orgs see their catalogue items first, with a visual
+'Catalogue' pill so the CSR knows the price will come from the org's
+catalogue rather than master tiers."
+```
+
+---
+
+## Task C1: `/api/organizations/search` returns `customer_code`
+
+**Files:**
+- Modify: `print-room-staff-portal/src/app/api/organizations/search/route.ts`
+
+**Acceptance:**
+- Response shape changes to `{ orgs: Array<{ id, name, customer_code: string | null }> }`.
+- No breaking change for existing callers — `customer_code` is just an added field.
+
+- [ ] **Step 1: Edit the SELECT**
+
+In `print-room-staff-portal/src/app/api/organizations/search/route.ts`, change line 12-13 from:
+
+```ts
+    .from('organizations')
+    .select('id, name')
+```
+
+to:
+
+```ts
+    .from('organizations')
+    .select('id, name, customer_code')
+```
+
+- [ ] **Step 2: Type-check**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal && npx tsc --noEmit
+```
+
+Expected: clean.
+
+- [ ] **Step 3: Commit**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal
+git add src/app/api/organizations/search/route.ts
+git commit -m "feat(orgs-search): include customer_code in response
+
+CompanySection had no way to read existing customer_code on org select,
+so for orgs that already had one (e.g. PRT) it always showed the
+'assign customer code' UI and submit would fail. Single column add."
+```
+
+---
+
+## Task C2: `CompanySection` wires `customer_code` from search result
+
+**Files:**
+- Modify: `print-room-staff-portal/src/components/orders/CompanySection.tsx`
+
+**Acceptance:**
+- When org is selected from typeahead, the existing `customer_code` is read directly from the search result and stored in state.
+- The "Assign customer code" UI only renders when `customer_code` is genuinely null on the row.
+- For PRT, no customer-code prompt appears.
+
+- [ ] **Step 1: Update `OrgResult` type**
+
+In `print-room-staff-portal/src/components/orders/CompanySection.tsx`, change lines 20-23 from:
+
+```ts
+interface OrgResult {
+  id: string
+  name: string
+}
+```
+
+to:
+
+```ts
+interface OrgResult {
+  id: string
+  name: string
+  customer_code: string | null
+}
+```
+
+- [ ] **Step 2: Use `customer_code` from search result + drop the dead opportunistic refetch**
+
+Replace the entire `selectOrg` function (lines 74-124) with:
+
+```ts
+  async function selectOrg(r: OrgResult) {
+    setShowDropdown(false)
+    setResults([])
+    setSearch('')
+
+    try {
+      const bRes = await fetch(`/api/b2b-accounts?organization_id=${r.id}`)
+      let account: B2BAccount | null = null
+      let isStocked = false
+      if (bRes.ok) {
+        const json = (await bRes.json()) as {
+          account: B2BAccount | null
+          stocked?: boolean
+        }
+        account = json.account ?? null
+        isStocked = !!json.stocked
+      }
+      const org: CompanyOrg = {
+        id: r.id,
+        name: r.name,
+        customer_code: r.customer_code,
+      }
+      onChangeOrganization(org, account, isStocked)
+    } catch {
+      onChangeOrganization(
+        { id: r.id, name: r.name, customer_code: r.customer_code },
+        null,
+        false,
+      )
+    }
+  }
+```
+
+- [ ] **Step 3: Type-check**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal && npx tsc --noEmit
+```
+
+Expected: clean.
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal
+git add src/components/orders/CompanySection.tsx
+git commit -m "fix(csr-company): read existing customer_code from org search result
+
+Pairs with C1 — the search response now carries customer_code so the
+inline 'assign code' UI only renders for orgs that genuinely lack one.
+Removes the dead opportunistic refetch noted in the previous TODO."
+```
+
+---
+
+## Task D1: Replace hard-coded `customer_email` with form input
+
+**Files:**
+- Modify: `print-room-staff-portal/src/components/orders/OrderFormClient.tsx`
+- Modify: `print-room-staff-portal/src/components/orders/CompanySection.tsx` (host the email field — same panel as company info)
+
+**Why:** [OrderFormClient.tsx:138](src/components/orders/OrderFormClient.tsx#L138) currently hard-codes `customer_email: 'csr@theprint-room.co.nz'` on every order — Monday subitems, future Xero sync, and order confirmations would all use the wrong contact. CSR needs to type the customer's email per order. v1: free-text input next to company info, no per-org "primary contact" persistence (deferred until `b2b_accounts` grows a contacts column or sub-app handles it).
+
+**Acceptance:**
+- New required text input "Customer email" appears in the Company section once an org is selected.
+- Submit blocked until a syntactically-valid email is provided.
+- Submit body sends the typed email, not the hard-coded one.
+
+- [ ] **Step 1: Add `customerEmail` to `OrderFormClient` state + submit body**
+
+In `print-room-staff-portal/src/components/orders/OrderFormClient.tsx`:
+
+a) Just after the existing `internalNotes` state (around line 53), add:
+
+```ts
+  const [customerEmail, setCustomerEmail] = useState('')
+```
+
+b) In the `canSubmit` `useMemo` (around line 95), add an email check after the `paymentTerms` check. Find:
+
+```ts
+    if (!terms.paymentTerms) return false
+```
+
+Add the line below it:
+
+```ts
+    if (!customerEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) return false
+```
+
+Then update the dependency array at the end of the `useMemo` (line 119) from:
+
+```ts
+  }, [organization, idempotencyKey, terms.paymentTerms, lines, shipTo.address])
+```
+
+to:
+
+```ts
+  }, [organization, idempotencyKey, terms.paymentTerms, lines, shipTo.address, customerEmail])
+```
+
+c) Change the submit body line 138 from:
+
+```ts
+        customer_email: 'csr@theprint-room.co.nz',
+```
+
+to:
+
+```ts
+        customer_email: customerEmail.trim(),
+```
+
+d) Pass the new state down via `<CompanySection>` props. Find the `<CompanySection>` JSX usage and add two props: `customerEmail={customerEmail}` and `onChangeCustomerEmail={setCustomerEmail}`.
+
+- [ ] **Step 2: Add email input to `CompanySection`**
+
+In `print-room-staff-portal/src/components/orders/CompanySection.tsx`:
+
+a) Add to the props interface (right after `onChangeCustomerCode`):
+
+```ts
+  customerEmail: string
+  onChangeCustomerEmail: (email: string) => void
+```
+
+b) Destructure them in the function signature.
+
+c) Inside the panel, just after the `<div className="grid grid-cols-2 md:grid-cols-4 gap-3 ...">` block (the tier/payment/credit/deposit grid), add a new row:
+
+```tsx
+          <div className="pt-2 border-t">
+            <label className="block text-sm">
+              <span className="text-gray-600">
+                Customer email <span className="text-red-500">*</span>
+              </span>
+              <Input
+                type="email"
+                value={customerEmail}
+                onChange={(e) => onChangeCustomerEmail(e.target.value)}
+                placeholder="orders@customer.example"
+                className="mt-1 max-w-sm"
+              />
+            </label>
+            <p className="text-xs text-gray-500 mt-1">
+              Used on the Monday production card and order confirmation. Leave blank if unknown — submit will be blocked.
+            </p>
+          </div>
+```
+
+- [ ] **Step 3: Type-check**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal && npx tsc --noEmit
+```
+
+Expected: clean.
+
+- [ ] **Step 4: Commit**
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal
+git add src/components/orders/OrderFormClient.tsx src/components/orders/CompanySection.tsx
+git commit -m "fix(csr): require customer email per order, drop hard-coded csr@
+
+Every CSR-created order had customer_email='csr@theprint-room.co.nz' so
+Monday subitems, Xero quotes, and confirmations would all use the wrong
+contact. Adds a required email field in the Company section, validated
+before submit is enabled."
+```
+
+---
+
+## Task E1: Manual UI walkthrough (covers Plan task 22 deferred steps + tasks 18/19/20 unchecked steps)
+
+**Prerequisites:**
+- Dev server running: `cd c:/Users/MSI/Documents/Projects/print-room-staff-portal && npm run dev`
+- Logged in as a staff user with `'orders'` or `'orders:write'` permission (or admin / super_admin role).
+- `MONDAY_API_TOKEN` set in `.env.local` (for the Monday push assertions).
+- PRT seed intact (org `ee155266…`, customer_code `'PRT'`, b2b_account tier 1, Wanaka HQ store, Basic Tee variants + inventory, PRT Demo Catalogue).
+
+**Acceptance (the walkthrough must observe each of these, ticked individually):**
+
+- [ ] **Step 1: Permission redirect** — log in as a non-permissioned user → `/orders` redirects to `/dashboard`. Direct API hit: `curl -i http://localhost:3000/api/orders` returns 401/403.
+
+- [ ] **Step 2: New order — happy path** — `/orders/new` as a permissioned user. Type "The Print Room Test" in the company typeahead → select PRT. Verify:
+  - "PRT" customer_code pill renders (no "Assign customer code" UI). **(C1+C2 verification.)**
+  - Tier 1 / payment_terms `net30` / deposit 0% read from b2b_account.
+  - Customer email input appears, submit button stays disabled until a valid email is typed. **(D1 verification.)**
+
+- [ ] **Step 3: Ship-to** — pick "Wanaka HQ" from store dropdown.
+
+- [ ] **Step 4: Line item — catalogue product** — start typing "Tee" in the product typeahead. For PRT (catalogue-scoped):
+  - At least one row carries the "Catalogue" pill. **(B1+B2 verification.)**
+  - PRT Bespoke Logo Sticker (`is_b2b_only=true`) appears since it's in PRT's catalogue.
+  - Pick a Catalogue tee → variant pickers populate → enter qty 50.
+  - Live unit price loads. Cross-check: it should match the catalogue price (use `effective_unit_price` SQL from Task A1 step 3 to confirm). **(A1 verification.)**
+
+- [ ] **Step 5: Line item — global product** — add a second line. Search "tee" in a context where org is null/cleared (or remember: with PRT selected, `is_b2b_only=true` items only surface via catalogue, never globally).
+  - For the second line still inside PRT context, pick a non-catalogue active product (any global tee that isn't in PRT Demo Catalogue) → unit price loads via the `get_unit_price` fallback inside `effective_unit_price`.
+
+- [ ] **Step 6: Submit** — fill notes, click Submit.
+  - Redirect to `/orders/<id>`. Allocated `order_ref` like `PRT-NNNNNN` shows prominently.
+  - "Copy ref" button works.
+  - DB check: `select order_ref, customer_email, total_amount from quotes where idempotency_key=...` — confirm typed email landed (not `csr@`). **(D1 verification.)**
+  - DB check: per-line `unit_price` matches what `effective_unit_price` returns for that org+product+qty. **(A1 end-to-end.)**
+
+- [ ] **Step 7: Monday push** — order detail sidebar shows Monday item link if `MONDAY_API_TOKEN` was set. If push failed, "Retry Monday push" button visible.
+
+- [ ] **Step 8: Over-commit banner** — go back to `/orders/new`, select PRT, ship-to Wanaka, line: Basic Tee Black/M (the OOS color per memory: 0 stock) × 1. Submit. Expect 409 banner "One or more lines exceed available stock."
+
+- [ ] **Step 9: Pre-ship edit** — open the order from Step 6, edit a line qty down by 1. Confirm `variant_inventory.committed_qty` decremented and a `variant_inventory_events` `order_release` row appeared.
+
+- [ ] **Step 10: Cancel order** — click Cancel on detail page → confirm. `orders.status='cancelled'`, all committed_qty for affected variants released.
+
+- [ ] **Step 11: Capture findings**
+
+If any step fails, file a follow-up in this plan as Task E2 with steps to fix. If all green, proceed to Task F1.
+
+- [ ] **Step 12: Commit (notes only)**
+
+If the walkthrough surfaces non-blocking observations worth memory-keeping, append them to the delta document and commit:
+
+```bash
+cd c:/Users/MSI/Documents/Projects/print-room-staff-portal
+git add docs/superpowers/notes/2026-04-29-csr-spec-on-disk-delta.md
+git commit -m "docs(csr): UI walkthrough findings on B7 reconciliation patch"
+```
+
+---
+
+## Task F1: Memory updates
+
+**Files:**
+- Modify: `~/.claude/projects/c--Users-MSI-Documents-Projects/memory/MEMORY.md`
+- Modify: `~/.claude/projects/c--Users-MSI-Documents-Projects/memory/project_b2b_specs_set.md`
+- Modify: `~/.claude/projects/c--Users-MSI-Documents-Projects/memory/project_b2b_plans_set.md`
+- Create: `~/.claude/projects/c--Users-MSI-Documents-Projects/memory/project_b2b_pricing_canonical.md`
+
+**Why:** Specs/plans set memories don't reflect the 2026-04-21 ship of CSR sub-app, and the pricing-canonical decision needs a discoverable home so future-me doesn't re-introduce direct `get_unit_price` calls from app code.
+
+- [ ] **Step 1: Append "shipped" lines to specs/plans memories**
+
+Add a new line at the end of `project_b2b_specs_set.md`:
+
+```
+**Status (2026-04-21):** sub-app #4 (CSR / B2B Order Entry) shipped — 21/22 plan tasks complete, DB verification done; UI manual walkthrough pending.
+**Status (2026-04-29):** B7 reconciliation patch landed — catalogue-aware pricing (`effective_unit_price`), `is_b2b_only` typeahead filter, customer_code prefetch, customer_email input. See plan section "Reconciliation patch — 2026-04-29 (B7)".
+```
+
+Add the same lines (verbatim) to `project_b2b_plans_set.md`.
+
+- [ ] **Step 2: Create `project_b2b_pricing_canonical.md`**
+
+Frontmatter + body:
+
+```markdown
+---
+name: B2B pricing canonical = effective_unit_price
+description: Single canonical price function across staff CSR + customer checkout — never call get_unit_price directly from app code
+type: project
+---
+
+`effective_unit_price(p_product_id, p_org_id, p_qty)` is the canonical pricing function for both staff (CSR `/api/pricing/quote-line`) and customer (`/shop` + `/checkout` submit) surfaces. It looks up the org's active catalogue, returns `catalogue_unit_price(item, qty)` when an item is found, falls back to `get_unit_price(product, org, qty)` otherwise.
+
+**Why:** When sub-app #3 (B2B catalogues) shipped 2026-04-27, three call sites still called `get_unit_price` directly — bypassing catalogues. PRT had a catalogue but staff/customer surfaces returned different prices for the same product. B7 reconciliation 2026-04-29 unified them.
+
+**How to apply:**
+- Never call `rpc('get_unit_price', ...)` from app code. If you see it in a new PR, flag it.
+- New surfaces (e.g. quote builder, reorder UI, design-proof reorder) MUST call `effective_unit_price`.
+- Catalogue prices are absolute — `catalogue_unit_price` does NOT apply tier discount on top. This is intentional per the 2026-04-27 amendment removing `discount_pct`.
+- The Postgres `get_unit_price` function still exists and is called by `effective_unit_price` as the non-catalogue fallback. Don't drop it.
+
+**Files referencing `effective_unit_price` (as of 2026-04-29):**
+- `print-room-staff-portal/src/app/api/pricing/quote-line/route.ts`
+- `print-room-portal/lib/checkout/submit.ts`
+- `print-room-portal/lib/shop/effective-price.ts` (helper wrapper)
+- `print-room-portal/app/shop/...` (consumed via the wrapper)
+```
+
+- [ ] **Step 3: Add MEMORY.md index entry**
+
+Insert a new line near the other B2B project memories in `MEMORY.md`:
+
+```
+- [B2B Pricing Canonical](project_b2b_pricing_canonical.md) — effective_unit_price is the only price function app code may call; never use get_unit_price directly
+```
+
+- [ ] **Step 4: No commit needed**
+
+Memory files live outside the repo — no git operation.
+
+---
+
+## Self-review checklist (run before declaring B7 done)
+
+- [ ] Tasks A1, A2 each verified by SQL smoke (catalogue prices distinct from master prices for PRT) + browser submit (customer_email + unit_price land correctly in `quotes` row).
+- [ ] Tasks B1, B2 verified by typing in the typeahead and seeing the "Catalogue" pill on a PRT-Demo-Catalogue item.
+- [ ] Tasks C1, C2 verified by selecting PRT and seeing `'PRT'` pill, no assign-code prompt.
+- [ ] Task D1 verified — submit disabled until valid email typed; submitted email lands in `quotes.customer_email`.
+- [ ] Task E1 — all 12 walkthrough steps green or follow-up filed.
+- [ ] Task F1 — memories updated, MEMORY.md index updated.
+- [ ] No `'get_unit_price'` literal remains in either repo's app code (`grep -rE "rpc\\('get_unit_price'" print-room-staff-portal/src print-room-portal/lib print-room-portal/app` returns zero).
+- [ ] `npx tsc --noEmit` clean in both repos.
+- [ ] Final commit summary surfaced to Jamie for the morning shipping note slot.
+
