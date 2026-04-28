@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   }
 
   const [priceResult, bracketResult, tierResult] = await Promise.all([
-    auth.admin.rpc('get_unit_price', {
+    auth.admin.rpc('effective_unit_price', {
       p_product_id: product_id,
       p_org_id: organization_id,
       p_qty: quantity,
