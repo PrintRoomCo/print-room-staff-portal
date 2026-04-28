@@ -33,6 +33,7 @@ import {
   Package,
   Boxes,
   ShoppingCart,
+  FileCheck,
 } from 'lucide-react'
 
 interface NavItem {
@@ -113,6 +114,7 @@ const NAV_SECTIONS: NavSection[] = [
     permission: 'catalogues',
     items: [
       { label: 'Catalogues', href: '/catalogues', icon: BookOpen },
+      { label: 'Design Proofs', href: '/proofs', icon: FileCheck },
     ],
   },
   {
