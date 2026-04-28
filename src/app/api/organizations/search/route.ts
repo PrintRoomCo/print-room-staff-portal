@@ -10,7 +10,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await auth.admin
     .from('organizations')
-    .select('id, name')
+    .select('id, name, customer_code')
     .ilike('name', `%${q}%`)
     .order('name', { ascending: true })
     .limit(20)
