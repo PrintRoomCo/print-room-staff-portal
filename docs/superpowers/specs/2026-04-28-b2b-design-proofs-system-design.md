@@ -444,6 +444,8 @@ The existing `(staff-quote)` route group treats every flow the same as customer.
 
 Each phase commits independently; each has a SQL gate. Phase boundaries are natural review checkpoints.
 
+**Status:** Phase 1 shipped 2026-04-28. Migration files at design-tool/supabase/migrations/create-design-proofs-tables.sql / create-design-proof-approvals-links.sql / create-design-proofs-storage.sql. Builder routes at /staff-quote/proof/{new,[id]/builder,[id]/preview}. PDF render via puppeteer + /internal/proof-html/[versionId].
+
 ## 14. Verification
 
 - A staff user with `proofs:write` can create a draft proof for the PRT test org from `/staff-quote/proof/new`, add 2 designs spanning 3 product variants each, set print areas + Pantones, save, preview as PDF.
