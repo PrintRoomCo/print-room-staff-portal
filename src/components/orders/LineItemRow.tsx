@@ -22,6 +22,7 @@ interface ProductSearchResult {
   id: string
   name: string
   image_url?: string | null
+  via_catalogue?: boolean
 }
 
 interface VariantRow {
@@ -71,9 +72,9 @@ export function LineItemRow({
     }
     const t = setTimeout(async () => {
       try {
-        const r = await fetch(
-          `/api/products/search?q=${encodeURIComponent(search)}`,
-        )
+        const params = new URLSearchParams({ q: search })
+        if (organizationId) params.set('organization_id', organizationId)
+        const r = await fetch(`/api/products/search?${params.toString()}`)
         if (r.ok) {
           const json = (await r.json()) as { products?: ProductSearchResult[] }
           setResults(json.products ?? [])
@@ -309,9 +310,14 @@ export function LineItemRow({
                       key={p.id}
                       type="button"
                       onClick={() => selectProduct(p)}
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm"
+                      className="flex w-full items-center justify-between gap-2 px-4 py-2 text-left text-sm hover:bg-gray-50"
                     >
-                      {p.name}
+                      <span>{p.name}</span>
+                      {p.via_catalogue && (
+                        <span className="inline-block bg-indigo-100 text-indigo-800 rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide">
+                          Catalogue
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
