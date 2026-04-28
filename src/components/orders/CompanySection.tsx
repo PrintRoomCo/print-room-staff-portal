@@ -33,6 +33,8 @@ interface CompanySectionProps {
     stocked: boolean,
   ) => void
   onChangeCustomerCode: (code: string) => void
+  customerEmail: string
+  onChangeCustomerEmail: (email: string) => void
 }
 
 export function CompanySection({
@@ -41,6 +43,8 @@ export function CompanySection({
   stocked,
   onChangeOrganization,
   onChangeCustomerCode,
+  customerEmail,
+  onChangeCustomerEmail,
 }: CompanySectionProps) {
   const [search, setSearch] = useState('')
   const [results, setResults] = useState<OrgResult[]>([])
@@ -260,6 +264,25 @@ export function CompanySection({
                   : '—'}
               </div>
             </div>
+          </div>
+
+          <div className="pt-2 border-t">
+            <label className="block text-sm">
+              <span className="text-gray-600">
+                Customer email <span className="text-red-500">*</span>
+              </span>
+              <Input
+                type="email"
+                value={customerEmail}
+                onChange={(e) => onChangeCustomerEmail(e.target.value)}
+                placeholder="orders@customer.example"
+                className="mt-1 max-w-sm"
+              />
+            </label>
+            <p className="text-xs text-gray-500 mt-1">
+              Used on the Monday production card and order confirmation. Leave
+              blank if unknown — submit will be blocked.
+            </p>
           </div>
         </div>
       )}

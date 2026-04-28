@@ -51,6 +51,7 @@ export function OrderFormClient() {
   })
   const [notes, setNotes] = useState('')
   const [internalNotes, setInternalNotes] = useState('')
+  const [customerEmail, setCustomerEmail] = useState('')
 
   const [idempotencyKey, setIdempotencyKey] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -96,6 +97,12 @@ export function OrderFormClient() {
     if (!organization || !organization.customer_code) return false
     if (!idempotencyKey) return false
     if (!terms.paymentTerms) return false
+    if (
+      !customerEmail.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())
+    ) {
+      return false
+    }
     if (!lines.length) return false
     if (
       !shipTo.address.line1.trim() ||
@@ -116,7 +123,14 @@ export function OrderFormClient() {
       }
     }
     return true
-  }, [organization, idempotencyKey, terms.paymentTerms, lines, shipTo.address])
+  }, [
+    organization,
+    idempotencyKey,
+    terms.paymentTerms,
+    lines,
+    shipTo.address,
+    customerEmail,
+  ])
 
   async function handleSubmit() {
     if (!organization || !organization.customer_code) return
@@ -135,7 +149,7 @@ export function OrderFormClient() {
         organization_id: organization.id,
         customer_code: organization.customer_code,
         customer_name: organization.name,
-        customer_email: 'csr@theprint-room.co.nz',
+        customer_email: customerEmail.trim(),
         shipping_address: {
           line1: shipTo.address.line1,
           city: shipTo.address.city,
@@ -211,6 +225,8 @@ export function OrderFormClient() {
             stocked={stocked}
             onChangeOrganization={handleOrgChange}
             onChangeCustomerCode={handleCustomerCodeChange}
+            customerEmail={customerEmail}
+            onChangeCustomerEmail={setCustomerEmail}
           />
 
           <ShipToSection
