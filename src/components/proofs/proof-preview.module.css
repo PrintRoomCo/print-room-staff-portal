@@ -1,0 +1,62 @@
+.preview {}
+
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+@media print {
+  :global(body.printing-proof) {
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  :global(body.printing-proof *) {
+    visibility: hidden !important;
+  }
+
+  :global(body.printing-proof .proof-preview),
+  :global(body.printing-proof .proof-preview *) {
+    visibility: visible !important;
+  }
+
+  :global(body.printing-proof .proof-preview) {
+    position: absolute;
+    inset: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    background: #fff;
+  }
+
+  :global(body.printing-proof .proof-preview__pageMeta) {
+    display: none !important;
+  }
+
+  :global(body.printing-proof .proof-preview__page) {
+    margin: 0 !important;
+    padding: 0 !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  :global(body.printing-proof .proof-preview__page:last-child) {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  :global(body.printing-proof .proof-preview__sheet) {
+    width: 100%;
+    height: 100vh;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  :global(body.printing-proof .proof-preview__canvas) {
+    height: 100vh;
+    padding: 0 !important;
+    aspect-ratio: auto !important;
+  }
+}
