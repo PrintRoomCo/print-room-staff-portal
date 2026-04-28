@@ -20,6 +20,7 @@ export interface B2BAccount {
 interface OrgResult {
   id: string
   name: string
+  customer_code: string | null
 }
 
 interface CompanySectionProps {
@@ -76,11 +77,8 @@ export function CompanySection({
     setResults([])
     setSearch('')
 
-    // Fetch full org (for customer_code) + b2b account in parallel.
     try {
-      const [bRes] = await Promise.all([
-        fetch(`/api/b2b-accounts?organization_id=${r.id}`),
-      ])
+      const bRes = await fetch(`/api/b2b-accounts?organization_id=${r.id}`)
       let account: B2BAccount | null = null
       let isStocked = false
       if (bRes.ok) {
@@ -91,32 +89,15 @@ export function CompanySection({
         account = json.account ?? null
         isStocked = !!json.stocked
       }
-      // Look up customer_code via org search result list, or fall back to
-      // re-hitting a details endpoint. The /api/organizations/search endpoint
-      // only returns id+name, so for customer_code we rely on the PATCH
-      // endpoint round-trip. Start with null and let the inline editor catch
-      // it if missing.
       const org: CompanyOrg = {
         id: r.id,
         name: r.name,
-        customer_code: null,
-      }
-      // Opportunistically fetch customer_code through an organizations
-      // admin-style endpoint if available. We'll peek at the admin RPC
-      // via a tiny GET — fall back silently if unavailable.
-      try {
-        const oRes = await fetch(
-          `/api/organizations/search?q=${encodeURIComponent(r.name)}`,
-        )
-        // /api/organizations/search only returns id+name — leave code null.
-        void oRes
-      } catch {
-        /* ignore */
+        customer_code: r.customer_code,
       }
       onChangeOrganization(org, account, isStocked)
     } catch {
       onChangeOrganization(
-        { id: r.id, name: r.name, customer_code: null },
+        { id: r.id, name: r.name, customer_code: r.customer_code },
         null,
         false,
       )
