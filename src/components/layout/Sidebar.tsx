@@ -26,7 +26,6 @@ import {
   LogOut,
   Menu,
   X,
-  Pencil,
   ChevronDown,
   ChevronRight,
   ChevronLeft,
@@ -82,7 +81,6 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Quote Dashboard', href: '/quote-tool', icon: FileText },
       { label: 'New Quote', href: '/quote-tool/new', icon: FilePlus },
       { label: 'Saved Quotes', href: '/quote-tool/quotes', icon: List },
-      { label: 'Design Tool', href: '/quote-tool/design-tool', icon: Pencil },
     ],
   },
   {

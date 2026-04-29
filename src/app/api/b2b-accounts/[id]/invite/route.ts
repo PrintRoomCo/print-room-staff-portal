@@ -16,12 +16,12 @@ function validEmail(email: string) {
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ orgId: string }> },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requireB2BAccountsStaffAccess()
   if ('error' in auth) return auth.error
 
-  const { orgId } = await params
+  const { id } = await params
   let body: InviteBody
   try {
     body = (await request.json()) as InviteBody
@@ -47,7 +47,7 @@ export async function POST(
   const { data: org } = await auth.admin
     .from('organizations')
     .select('id')
-    .eq('id', orgId)
+    .eq('id', id)
     .maybeSingle()
   if (!org) {
     return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
@@ -64,7 +64,7 @@ export async function POST(
       .from('user_organizations')
       .select('user_id')
       .eq('user_id', profile.id)
-      .eq('organization_id', orgId)
+      .eq('organization_id', id)
       .maybeSingle()
 
     if (existingMembership) {
@@ -83,7 +83,7 @@ export async function POST(
       data: {
         first_name: firstName,
         last_name: lastName,
-        invited_org_id: orgId,
+        invited_org_id: id,
       },
     })
 
@@ -104,7 +104,7 @@ export async function POST(
     .from('user_organizations')
     .insert({
       user_id: userId,
-      organization_id: orgId,
+      organization_id: id,
       role,
     })
 
