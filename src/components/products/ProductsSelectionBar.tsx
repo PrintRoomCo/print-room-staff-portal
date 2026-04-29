@@ -15,8 +15,10 @@ export function ProductsSelectionBar({
   if (selectedIds.length === 0) return null
   return (
     <>
-      <div className="sticky bottom-0 left-0 right-0 z-30 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 shadow-lg">
-        <span className="text-sm text-gray-700">{selectedIds.length} selected</span>
+      <div className="sticky bottom-0 left-0 right-0 z-30 flex items-center justify-between border-t border-gray-200 bg-white px-6 py-3 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.06)]">
+        <span className="text-sm font-medium text-gray-700">
+          {selectedIds.length} selected
+        </span>
         <div className="flex gap-2">
           <Button type="button" variant="secondary" onClick={onClear}>
             Clear
