@@ -4,6 +4,7 @@ import { requireB2BAccountsStaffAccess } from '@/lib/b2b-accounts/server'
 import { AccountTermsCard, type AccountTerms } from '@/components/b2b-accounts/AccountTermsCard'
 import { StoresPanel, type Store } from '@/components/b2b-accounts/StoresPanel'
 import { CataloguesPanel, type CatalogueRow } from '@/components/b2b-accounts/CataloguesPanel'
+import { InviteCustomerDialog } from '@/components/b2b-accounts/InviteCustomerDialog'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,18 +148,21 @@ export default async function B2BAccountPage({
 
   return (
     <div className="p-6">
-      <header className="mb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold">{org.name}</h1>
-          {org.customer_code && (
-            <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700">
-              {org.customer_code}
-            </span>
+      <header className="mb-6 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold">{org.name}</h1>
+            {org.customer_code && (
+              <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-700">
+                {org.customer_code}
+              </span>
+            )}
+          </div>
+          {org.domain && (
+            <p className="mt-1 text-sm text-gray-500">{org.domain}</p>
           )}
         </div>
-        {org.domain && (
-          <p className="mt-1 text-sm text-gray-500">{org.domain}</p>
-        )}
+        <InviteCustomerDialog organizationId={org.id} organizationName={org.name} />
       </header>
 
       <div className="grid grid-cols-1 gap-4">
