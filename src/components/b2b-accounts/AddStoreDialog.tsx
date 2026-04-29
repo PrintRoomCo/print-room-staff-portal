@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
 
 export function AddStoreDialog({
   organizationId,
@@ -46,55 +47,13 @@ export function AddStoreDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold">Add store</h2>
-        <div className="mt-4 space-y-3">
-          <label className="block text-sm">
-            Name
-            <Input
-              className="mt-1"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <label className="block text-sm">
-            Address
-            <Input
-              className="mt-1"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-            />
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm">
-              City
-              <Input
-                className="mt-1"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
-            </label>
-            <label className="block text-sm">
-              Postal code
-              <Input
-                className="mt-1"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-              />
-            </label>
-          </div>
-          <label className="block text-sm">
-            Country
-            <Input
-              className="mt-1"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-            />
-          </label>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-        </div>
-        <div className="mt-6 flex justify-end gap-2">
+    <Modal
+      open
+      onClose={onClose}
+      title="Add store"
+      size="md"
+      footer={
+        <>
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
@@ -106,8 +65,54 @@ export function AddStoreDialog({
           >
             {busy ? 'Creating…' : 'Create store'}
           </Button>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <label className="block text-sm">
+          Name
+          <Input
+            className="mt-1"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+        <label className="block text-sm">
+          Address
+          <Input
+            className="mt-1"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block text-sm">
+            City
+            <Input
+              className="mt-1"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+            />
+          </label>
+          <label className="block text-sm">
+            Postal code
+            <Input
+              className="mt-1"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+            />
+          </label>
         </div>
+        <label className="block text-sm">
+          Country
+          <Input
+            className="mt-1"
+            value={country}
+            onChange={(e) => setCountry(e.target.value)}
+          />
+        </label>
+        {error && <p className="text-sm text-red-600">{error}</p>}
       </div>
-    </div>
+    </Modal>
   )
 }
