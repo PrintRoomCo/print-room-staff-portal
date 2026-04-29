@@ -3,6 +3,10 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Select } from '@/components/ui/select'
 
 export interface AccountTerms {
   id: string
@@ -67,7 +71,7 @@ export function AccountTermsCard({
 
   if (!account) {
     return (
-      <section className="rounded border border-gray-200 p-4">
+      <Card className="p-6">
         <h2 className="text-sm font-medium text-gray-700">Account terms</h2>
         <p className="mt-2 text-sm text-gray-500">
           No B2B account on file for this organization.
@@ -82,12 +86,12 @@ export function AccountTermsCard({
         >
           {busy ? 'Creating…' : 'Create with default terms'}
         </Button>
-      </section>
+      </Card>
     )
   }
 
   return (
-    <section className="rounded border border-gray-200 p-4">
+    <Card className="p-6">
       <header className="flex items-baseline justify-between">
         <h2 className="text-sm font-medium text-gray-700">Account terms</h2>
         <span className="text-xs text-gray-500">
@@ -96,16 +100,16 @@ export function AccountTermsCard({
       </header>
 
       {error && (
-        <p className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-1.5 text-sm text-red-700">
+        <p className="mt-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
           {error}
         </p>
       )}
 
-      <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+      <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
         <Field label="Tier">
-          <select
+          <Select
             aria-label="Tier level"
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="w-32"
             defaultValue={account.tier_level ?? 3}
             onChange={(e) => patchField({ tier_level: Number(e.target.value) })}
           >
@@ -114,12 +118,12 @@ export function AccountTermsCard({
                 Tier {t}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
         <Field label="Payment terms">
-          <select
+          <Select
             aria-label="Payment terms"
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="w-32"
             defaultValue={account.payment_terms ?? 'net30'}
             onChange={(e) => patchField({ payment_terms: e.target.value })}
           >
@@ -128,12 +132,12 @@ export function AccountTermsCard({
                 {t}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
         <Field label="Default deposit">
-          <select
+          <Select
             aria-label="Default deposit percent"
-            className="rounded border border-gray-300 px-2 py-1 text-sm"
+            className="w-32"
             defaultValue={account.default_deposit_percent ?? 0}
             onChange={(e) =>
               patchField({ default_deposit_percent: Number(e.target.value) })
@@ -144,22 +148,21 @@ export function AccountTermsCard({
                 {p}%
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
         <Field label="Trusted">
-          <input
+          <Checkbox
             aria-label="Is trusted"
-            type="checkbox"
             defaultChecked={Boolean(account.is_trusted)}
             onChange={(e) => patchField({ is_trusted: e.target.checked })}
           />
         </Field>
         <Field label="Credit limit">
-          <input
+          <Input
             aria-label="Credit limit"
             type="number"
             step="0.01"
-            className="w-32 rounded border border-gray-300 px-2 py-1 text-sm"
+            className="w-32"
             defaultValue={account.credit_limit ?? ''}
             onBlur={(e) =>
               patchField({
@@ -170,15 +173,14 @@ export function AccountTermsCard({
           />
         </Field>
         <Field label="Active">
-          <input
+          <Checkbox
             aria-label="Account active"
-            type="checkbox"
             defaultChecked={account.is_active !== false}
             onChange={(e) => patchField({ is_active: e.target.checked })}
           />
         </Field>
       </dl>
-    </section>
+    </Card>
   )
 }
 
