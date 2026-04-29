@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Modal } from '@/components/ui/modal'
+import { Select } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 
 type Org = { id: string; name: string }
@@ -56,49 +58,18 @@ export function CreateCatalogueDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-semibold">Create B2B catalogue</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          {productIds.length === 0
-            ? 'Empty catalogue — add items after creating.'
-            : `${productIds.length} product${productIds.length === 1 ? '' : 's'} will be added (master tiers auto-copied).`}
-        </p>
-        <div className="mt-4 space-y-3">
-          <label className="block text-sm">
-            Organization
-            <select
-              className="mt-1 w-full rounded-full bg-gray-50 border border-gray-200 px-5 py-2.5 text-sm"
-              value={orgId}
-              onChange={(e) => setOrgId(e.target.value)}
-            >
-              <option value="">— Select —</option>
-              {orgs.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            Name
-            <Input
-              className="mt-1"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
-          <label className="block text-sm">
-            Description
-            <Textarea
-              className="mt-1"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </label>
-          {error && <div className="text-sm text-red-600">{error}</div>}
-        </div>
-        <div className="mt-6 flex justify-end gap-2">
+    <Modal
+      open
+      onClose={onClose}
+      title="Create B2B catalogue"
+      description={
+        productIds.length === 0
+          ? 'Empty catalogue — add items after creating.'
+          : `${productIds.length} product${productIds.length === 1 ? '' : 's'} will be added (master tiers auto-copied).`
+      }
+      size="md"
+      footer={
+        <>
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
@@ -110,8 +81,43 @@ export function CreateCatalogueDialog({
           >
             {busy ? 'Creating…' : 'Create catalogue'}
           </Button>
-        </div>
+        </>
+      }
+    >
+      <div className="space-y-3">
+        <label className="block text-sm">
+          Organization
+          <Select
+            className="mt-1"
+            value={orgId}
+            onChange={(e) => setOrgId(e.target.value)}
+          >
+            <option value="">— Select —</option>
+            {orgs.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <label className="block text-sm">
+          Name
+          <Input
+            className="mt-1"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+        <label className="block text-sm">
+          Description
+          <Textarea
+            className="mt-1"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </label>
+        {error && <div className="text-sm text-red-600">{error}</div>}
       </div>
-    </div>
+    </Modal>
   )
 }
