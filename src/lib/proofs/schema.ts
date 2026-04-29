@@ -3,6 +3,7 @@ import type {
   ProofDetail,
   ProofDocument,
   ProofMethod,
+  ProofMockupAsset,
   ProofOrderLine,
   ProofPrintArea,
   ProofStatus,
@@ -80,6 +81,11 @@ function toBooleanValue(value: unknown, fallback = false) {
   return typeof value === 'boolean' ? value : fallback
 }
 
+function toNumberValue(value: unknown, fallback = 0) {
+  const number = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(number) ? number : fallback
+}
+
 function cleanHex(value: unknown, fallback = '#1f2a44') {
   const hex = toStringValue(value).trim()
   return /^#[0-9a-f]{6}$/i.test(hex) ? hex : fallback
@@ -134,6 +140,7 @@ export function createDefaultDesign(index: number) {
     artworkNotes: '',
     printHeightsNote: 'IF GARMENTS DIFFER',
     productionNote: 'N/A',
+    mockupAssets: [],
     printAreas: [
       createDefaultPrintArea('LEFT CHEST'),
       createDefaultPrintArea('CENTRE BACK'),
@@ -221,6 +228,138 @@ export function normalizeProofUpdateInput(value: unknown): ProofUpdateInput {
   return update
 }
 
+export function normalizeProofMockupAssets(value: unknown): ProofMockupAsset[] {
+  return asArray(value)
+    .map(normalizeProofMockupAsset)
+    .filter((asset): asset is ProofMockupAsset => Boolean(asset))
+}
+
+function normalizeProofMockupAsset(value: unknown): ProofMockupAsset | null {
+  const record = asObject(value)
+  const artwork = asObject(record.artwork)
+  const mockup = asObject(record.mockup)
+  const placement = asObject(record.placement_transform)
+  const dimensions = asObject(record.dimensions_mm)
+  const decoration = asObject(record.decoration)
+  const pricingRef = asObject(decoration.pricing_ref)
+  const quantities = asObject(record.quantities)
+  const decorationSourceId = pricingRef.decoration_source_id
+  const oneSizeQty = quantities.one_size_qty
+
+  const productId = toStringValue(record.product_id).trim()
+  const productViewKey = toStringValue(record.product_view_key).trim()
+  const printAreaKey = toStringValue(record.print_area_key).trim()
+  const artworkPath = toStringValue(artwork.storage_path).trim()
+  const artworkUrl = toStringValue(artwork.preview_url).trim()
+  const mockupPath = toStringValue(mockup.storage_path).trim()
+  const mockupUrl = toStringValue(mockup.preview_url).trim()
+
+  if (!productId || !productViewKey || !printAreaKey || !mockupPath) return null
+
+  const method = normalizeMethod(decoration.method)
+  const pricingKind = toStringValue(pricingRef.kind).trim()
+  const kind =
+    pricingKind === 'catalogue_item' || pricingKind === 'quote_builder_decoration'
+      ? pricingKind
+      : 'product'
+
+  return {
+    schema_version: 1,
+    product_id: productId,
+    variant_id: toStringValue(record.variant_id).trim() || null,
+    catalogue_item_id: toStringValue(record.catalogue_item_id).trim() || null,
+    product_view_key: productViewKey,
+    product_image_id: toStringValue(record.product_image_id).trim() || null,
+    print_area_key: printAreaKey,
+    artwork: {
+      storage_path: artworkPath,
+      preview_url: artworkUrl,
+      original_filename: toStringValue(artwork.original_filename).trim() || undefined,
+    },
+    mockup: {
+      storage_path: mockupPath,
+      preview_url: mockupUrl,
+      width_px: mockup.width_px === undefined ? undefined : toNumberValue(mockup.width_px),
+      height_px: mockup.height_px === undefined ? undefined : toNumberValue(mockup.height_px),
+    },
+    placement_transform: {
+      x: toNumberValue(placement.x),
+      y: toNumberValue(placement.y),
+      w: toNumberValue(placement.w),
+      h: toNumberValue(placement.h),
+      rotation: placement.rotation === undefined ? undefined : toNumberValue(placement.rotation),
+      coordinate_space: 'print_area_normalized',
+    },
+    dimensions_mm: {
+      artwork_w: toNumberValue(dimensions.artwork_w),
+      artwork_h: toNumberValue(dimensions.artwork_h),
+      print_area_w: dimensions.print_area_w === undefined ? undefined : toNumberValue(dimensions.print_area_w),
+      print_area_h: dimensions.print_area_h === undefined ? undefined : toNumberValue(dimensions.print_area_h),
+    },
+    decoration: {
+      method,
+      pantones: asArray(decoration.pantones).map(item => toStringValue(item).trim()).filter(Boolean),
+      production_note: toStringValue(decoration.production_note).trim() || null,
+      pricing_ref: {
+        kind,
+        product_id: toStringValue(pricingRef.product_id, productId).trim() || productId,
+        catalogue_item_id: toStringValue(pricingRef.catalogue_item_id).trim() || null,
+        decoration_source_id: decorationSourceId === undefined || decorationSourceId === null || decorationSourceId === ''
+          ? null
+          : toNumberValue(decorationSourceId),
+        decoration_type: toStringValue(pricingRef.decoration_type).trim() || undefined,
+        decoration_detail: toStringValue(pricingRef.decoration_detail).trim() || undefined,
+        location_key: toStringValue(pricingRef.location_key, printAreaKey).trim() || printAreaKey,
+      },
+    },
+    quantities: {
+      sizes: normalizeQuantitySizes(quantities.sizes),
+      one_size_qty: oneSizeQty === undefined || oneSizeQty === null || oneSizeQty === ''
+        ? null
+        : toNumberValue(oneSizeQty),
+      total_qty: toNumberValue(quantities.total_qty),
+    },
+  }
+}
+
+function normalizeQuantitySizes(value: unknown) {
+  const source = asObject(value)
+  return Object.entries(source).reduce<Record<string, number>>((acc, [key, raw]) => {
+    const qty = toNumberValue(raw)
+    if (key && qty > 0) acc[key] = qty
+    return acc
+  }, {})
+}
+
+function normalizeSizeColumn(key: string) {
+  const trimmed = key.trim()
+  if ((SIZE_COLUMNS as readonly string[]).includes(trimmed)) return trimmed
+  const normalized = trimmed.toLowerCase().replace(/\s+/g, '')
+  const aliases: Record<string, string> = {
+    os: 'One Size',
+    onesize: 'One Size',
+    xxs: 'XXS/6',
+    xs: 'XS/8',
+    s: 'SML/10',
+    sml: 'SML/10',
+    small: 'SML/10',
+    m: 'MED/12',
+    med: 'MED/12',
+    medium: 'MED/12',
+    l: 'LRG/14',
+    lrg: 'LRG/14',
+    large: 'LRG/14',
+    xl: 'XLG/16',
+    xlg: 'XLG/16',
+    '2xl': '2XL/18',
+    xxl: '2XL/18',
+    '3xl': '3XL/20',
+    '4xl': '4XL/22',
+    '5xl': '5XL/24',
+  }
+  return aliases[normalized] ?? trimmed
+}
+
 export function normalizeProofDocument(value: unknown, fallback?: Partial<ProofDocument>): ProofDocument {
   const record = asObject(value)
 
@@ -230,7 +369,13 @@ export function normalizeProofDocument(value: unknown, fallback?: Partial<ProofD
 
   const designs = asArray(record.designs)
     .map((item, index) => normalizeDesign(item, index))
-    .filter(design => design.name || design.frontMockupUrl || design.backMockupUrl || design.artworkUrl)
+    .filter(design => (
+      design.name ||
+      design.frontMockupUrl ||
+      design.backMockupUrl ||
+      design.artworkUrl ||
+      (design.mockupAssets?.length ?? 0) > 0
+    ))
 
   const orderLines = asArray(record.orderLines)
     .map(item => normalizeOrderLine(item))
@@ -288,6 +433,9 @@ function normalizeDesign(value: unknown, index: number) {
   const applications = asArray(record.garment_applications)
   const firstApplication = asObject(applications[0])
   const mockupPaths = asObject(firstApplication.mockup_paths)
+  const mockupAssets = normalizeProofMockupAssets(record.mockupAssets || record.mockup_assets)
+  const frontAssetUrl = firstAssetUrlForView(mockupAssets, 'front')
+  const backAssetUrl = firstAssetUrlForView(mockupAssets, 'back')
   const printAreas = asArray(record.printAreas || firstApplication.print_areas)
     .map((item, areaIndex) => normalizePrintArea(item, areaIndex))
     .filter(area => area.label)
@@ -299,15 +447,42 @@ function normalizeDesign(value: unknown, index: number) {
     subtitle: toStringValue(record.subtitle).trim(),
     garmentLabel: toStringValue(record.garmentLabel || firstApplication.product_name).trim(),
     colourName: toStringValue(record.colourName || firstApplication.colour_label || firstApplication.colour_code).trim(),
-    frontMockupUrl: toStringValue(record.frontMockupUrl || mockupPaths.front).trim(),
-    backMockupUrl: toStringValue(record.backMockupUrl || mockupPaths.back).trim(),
+    frontMockupUrl: frontAssetUrl || toStringValue(record.frontMockupUrl || mockupPaths.front).trim(),
+    backMockupUrl: backAssetUrl || toStringValue(record.backMockupUrl || mockupPaths.back).trim(),
     artworkUrl: toStringValue(record.artworkUrl || artwork.preview_url).trim(),
     artworkBackground: cleanHex(record.artworkBackground || artwork.background_colour),
     artworkNotes: toStringValue(record.artworkNotes || artwork.notes).trim(),
     printHeightsNote: toStringValue(record.printHeightsNote || record.print_heights_note, 'IF GARMENTS DIFFER').trim(),
     productionNote: toStringValue(record.productionNote || record.production_note, 'N/A').trim(),
-    printAreas: printAreas.length > 0 ? printAreas : [createDefaultPrintArea()],
+    mockupAssets,
+    printAreas: printAreas.length > 0 ? printAreas : printAreasFromAssets(mockupAssets),
   }
+}
+
+function firstAssetUrlForView(assets: ProofMockupAsset[], view: string) {
+  const match = assets.find(asset => asset.product_view_key.toLowerCase() === view)
+  return match?.mockup.preview_url || match?.mockup.storage_path || ''
+}
+
+function printAreasFromAssets(assets: ProofMockupAsset[]): ProofPrintArea[] {
+  const unique = new Map<string, ProofMockupAsset>()
+  assets.forEach(asset => {
+    if (!unique.has(asset.print_area_key)) unique.set(asset.print_area_key, asset)
+  })
+
+  const areas = Array.from(unique.values()).map((asset, index) => ({
+    id: createProofItemId('area'),
+    label: asset.print_area_key || (index === 0 ? 'LEFT CHEST' : 'PRINT AREA'),
+    method: asset.decoration.method,
+    widthMm: toStringValue(asset.dimensions_mm.artwork_w || asset.dimensions_mm.print_area_w),
+    heightMm: toStringValue(asset.dimensions_mm.artwork_h || asset.dimensions_mm.print_area_h),
+    pantone: asset.decoration.pantones.join(', '),
+    pantoneHex: '#ffffff',
+    artworkStatus: 'NEW',
+    productionNote: asset.decoration.production_note || 'N/A',
+  }))
+
+  return areas.length > 0 ? areas : [createDefaultPrintArea()]
 }
 
 function normalizePrintArea(value: unknown, index: number): ProofPrintArea {
@@ -333,8 +508,11 @@ function normalizeOrderLine(value: unknown): ProofOrderLine {
   const quantities = createDefaultQuantities()
   const sourceQuantities = asObject(record.quantities || record.sizes)
 
-  SIZE_COLUMNS.forEach(column => {
-    quantities[column] = toStringValue(sourceQuantities[column]).trim()
+  Object.entries(sourceQuantities).forEach(([sourceColumn, raw]) => {
+    const column = normalizeSizeColumn(sourceColumn)
+    if (column in quantities) {
+      quantities[column] = toStringValue(raw).trim()
+    }
   })
 
   if ('one_size_qty' in record && !quantities['One Size']) {
@@ -350,6 +528,8 @@ function normalizeOrderLine(value: unknown): ProofOrderLine {
     garment: toStringValue(record.garment || record.garment_label).trim(),
     sku: toStringValue(record.sku).trim(),
     colour: toStringValue(record.colour || record.colour_code).trim(),
+    productId: toStringValue(record.productId || record.product_id).trim() || undefined,
+    productVariantId: toStringValue(record.productVariantId || record.product_variant_id).trim() || null,
     quantities,
   }
 }
@@ -363,6 +543,123 @@ export function calculateLineTotal(line: ProofOrderLine) {
     const value = Number.parseInt(line.quantities[column] || '0', 10)
     return total + (Number.isFinite(value) && value > 0 ? value : 0)
   }, 0)
+}
+
+export function mergeProofMockupAssets(document: ProofDocument, rawAssets: unknown): ProofDocument {
+  const assets = normalizeProofMockupAssets(rawAssets)
+  if (assets.length === 0) return document
+
+  const groups = groupAssetsByArtwork(assets)
+  const designs = document.designs.length > 0 ? [...document.designs] : [createDefaultDesign(1)]
+  const orderLines = [...document.orderLines]
+
+  groups.forEach((group, groupIndex) => {
+    const designIndex = findDesignIndexForAssets(designs, group, groupIndex)
+    const currentDesign = designs[designIndex] ?? createDefaultDesign(designs.length + 1)
+    const mergedAssets = dedupeAssets([...(currentDesign.mockupAssets ?? []), ...group])
+    const firstAsset = mergedAssets[0]
+
+    designs[designIndex] = {
+      ...currentDesign,
+      name: currentDesign.name || `Design ${designIndex + 1}`,
+      artworkUrl: currentDesign.artworkUrl || firstAsset?.artwork.preview_url || '',
+      frontMockupUrl: firstAssetUrlForView(mergedAssets, 'front') || currentDesign.frontMockupUrl,
+      backMockupUrl: firstAssetUrlForView(mergedAssets, 'back') || currentDesign.backMockupUrl,
+      mockupAssets: mergedAssets,
+      printAreas: mergePrintAreas(currentDesign.printAreas, printAreasFromAssets(group)),
+    }
+
+    const assetLine = orderLineFromAsset(group[0], designs[designIndex].index)
+    if (assetLine) {
+      const existingLineIndex = orderLines.findIndex(line => line.designIndex === assetLine.designIndex)
+      if (existingLineIndex >= 0) {
+        orderLines[existingLineIndex] = {
+          ...orderLines[existingLineIndex],
+          productId: orderLines[existingLineIndex].productId || assetLine.productId,
+          productVariantId: orderLines[existingLineIndex].productVariantId ?? assetLine.productVariantId,
+          quantities: mergeQuantities(orderLines[existingLineIndex].quantities, assetLine.quantities),
+        }
+      } else {
+        orderLines.push(assetLine)
+      }
+    }
+  })
+
+  return {
+    ...document,
+    designs: reindexDesigns(designs),
+    orderLines: orderLines.length > 0 ? orderLines : document.orderLines,
+  }
+}
+
+function groupAssetsByArtwork(assets: ProofMockupAsset[]) {
+  const grouped = new Map<string, ProofMockupAsset[]>()
+  assets.forEach(asset => {
+    const key = asset.artwork.storage_path || asset.artwork.preview_url || asset.product_id
+    grouped.set(key, [...(grouped.get(key) ?? []), asset])
+  })
+  return Array.from(grouped.values())
+}
+
+function findDesignIndexForAssets(designs: ProofDocument['designs'], assets: ProofMockupAsset[], fallbackIndex: number) {
+  const first = assets[0]
+  const byArtwork = designs.findIndex(design => (
+    Boolean(design.artworkUrl) &&
+    (design.artworkUrl === first.artwork.preview_url || design.artworkUrl === first.artwork.storage_path)
+  ))
+  if (byArtwork >= 0) return byArtwork
+  return fallbackIndex
+}
+
+function dedupeAssets(assets: ProofMockupAsset[]) {
+  const byKey = new Map<string, ProofMockupAsset>()
+  assets.forEach(asset => {
+    const key = [
+      asset.product_id,
+      asset.variant_id ?? '',
+      asset.product_view_key,
+      asset.print_area_key,
+      asset.mockup.storage_path,
+    ].join('|')
+    byKey.set(key, asset)
+  })
+  return Array.from(byKey.values())
+}
+
+function mergePrintAreas(current: ProofPrintArea[], imported: ProofPrintArea[]) {
+  const byLabel = new Map<string, ProofPrintArea>()
+  current.forEach(area => byLabel.set(area.label.toLowerCase(), area))
+  imported.forEach(area => {
+    const key = area.label.toLowerCase()
+    if (!byLabel.has(key)) byLabel.set(key, area)
+  })
+  return Array.from(byLabel.values())
+}
+
+function orderLineFromAsset(asset: ProofMockupAsset | undefined, designIndex: number): ProofOrderLine | null {
+  if (!asset || asset.quantities.total_qty <= 0) return null
+  const quantities = createDefaultQuantities()
+  Object.entries(asset.quantities.sizes).forEach(([size, qty]) => {
+    const column = normalizeSizeColumn(size)
+    if (column in quantities) quantities[column] = String(qty)
+  })
+  if (asset.quantities.one_size_qty && !quantities['One Size']) {
+    quantities['One Size'] = String(asset.quantities.one_size_qty)
+  }
+  return {
+    ...createDefaultOrderLine(designIndex),
+    name: `Design ${designIndex}`,
+    productId: asset.product_id,
+    productVariantId: asset.variant_id,
+    quantities,
+  }
+}
+
+function mergeQuantities(current: Record<string, string>, imported: Record<string, string>) {
+  return Object.entries(imported).reduce<Record<string, string>>((acc, [key, value]) => {
+    acc[key] = acc[key] || value
+    return acc
+  }, { ...current })
 }
 
 export function mapDbProofSummary(

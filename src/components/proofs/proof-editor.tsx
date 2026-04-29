@@ -11,6 +11,8 @@ import {
   Plus,
   Save,
   Trash2,
+  UploadCloud,
+  X,
 } from 'lucide-react'
 import { PresentationAssetPicker } from '@/components/presentations/presentation-asset-picker'
 import { PresentationField } from '@/components/presentations/presentation-field'
@@ -25,10 +27,11 @@ import {
   createDefaultDesign,
   createDefaultOrderLine,
   createDefaultPrintArea,
+  mergeProofMockupAssets,
   reindexDesigns,
 } from '@/lib/proofs/schema'
 import type { GeneratedImageAsset } from '@/types/image-generator/assets'
-import type { ProofDetail, ProofDesign, ProofDocument, ProofMethod, ProofOrderLine, ProofPrintArea } from '@/types/proofs'
+import type { ProofDetail, ProofDesign, ProofDocument, ProofMethod, ProofMockupAsset, ProofOrderLine, ProofPrintArea } from '@/types/proofs'
 import { PROOF_METHODS, SIZE_COLUMNS } from '@/types/proofs'
 
 interface ProofEditorProps {
@@ -61,6 +64,11 @@ export function ProofEditor({ proofId }: ProofEditorProps) {
   const [isDirty, setIsDirty] = useState(false)
   const [pendingExportTitle, setPendingExportTitle] = useState<string | null>(null)
   const [assetTarget, setAssetTarget] = useState<AssetTarget>(null)
+  const [studioOpen, setStudioOpen] = useState(false)
+  const [studioToken, setStudioToken] = useState<string | null>(null)
+  const [studioLoading, setStudioLoading] = useState(false)
+  const [studioError, setStudioError] = useState<string | null>(null)
+  const [studioWarnings, setStudioWarnings] = useState<string[]>([])
 
   useEffect(() => {
     async function fetchProof() {
@@ -117,6 +125,39 @@ export function ProofEditor({ proofId }: ProofEditorProps) {
       }
     }
   }, [activeView, pendingExportTitle])
+
+  useEffect(() => {
+    if (!studioOpen) return
+
+    const designToolUrl = process.env.NEXT_PUBLIC_DESIGN_TOOL_URL || ''
+    const allowedOrigin = designToolUrl ? new URL(designToolUrl).origin : null
+
+    function handleMessage(event: MessageEvent) {
+      if (allowedOrigin && event.origin !== allowedOrigin) return
+      const data = event.data as
+        | { type?: 'PROOF_ASSETS_READY'; proofId?: string; assets?: ProofMockupAsset[]; warnings?: string[] }
+        | { type?: 'PROOF_ASSET_ERROR'; proofId?: string; message?: string }
+
+      if (!data || data.proofId !== proofId) return
+
+      if (data.type === 'PROOF_ASSETS_READY') {
+        const assets = Array.isArray(data.assets) ? data.assets : []
+        updateProof(current => ({
+          ...current,
+          document: mergeProofMockupAssets(current.document, assets),
+        }))
+        setStudioWarnings(data.warnings ?? [])
+        setStudioOpen(false)
+      }
+
+      if (data.type === 'PROOF_ASSET_ERROR') {
+        setStudioError(data.message || 'The design tool could not generate proof assets.')
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [proofId, studioOpen])
 
   function updateProof(updater: (proof: ProofDetail) => ProofDetail) {
     setProof(current => (current ? updater(current) : current))
@@ -237,6 +278,28 @@ export function ProofEditor({ proofId }: ProofEditorProps) {
       name: design.name || asset.productLabel,
     }))
     setAssetTarget(null)
+  }
+
+  async function openStudioImporter() {
+    setStudioOpen(true)
+    setStudioError(null)
+    setStudioWarnings([])
+    if (studioToken) return
+
+    setStudioLoading(true)
+    try {
+      const response = await fetch('/api/proofs/token', { method: 'POST' })
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}))
+        throw new Error(payload.error || 'Failed to initialize design tool')
+      }
+      const payload = await response.json()
+      setStudioToken(payload.token)
+    } catch (tokenError) {
+      setStudioError(tokenError instanceof Error ? tokenError.message : 'Failed to initialize design tool')
+    } finally {
+      setStudioLoading(false)
+    }
   }
 
   async function saveProof() {
@@ -366,6 +429,10 @@ export function ProofEditor({ proofId }: ProofEditorProps) {
             <Save className="mr-2 h-4 w-4" />
             {saving ? 'Saving...' : 'Save changes'}
           </Button>
+          <Button variant="secondary" onClick={openStudioImporter}>
+            <UploadCloud className="mr-2 h-4 w-4" />
+            Import visual assets
+          </Button>
           <Button
             variant="secondary"
             onClick={handleExport}
@@ -381,6 +448,12 @@ export function ProofEditor({ proofId }: ProofEditorProps) {
       {error && (
         <div className="proof-editor__error rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
           {error}
+        </div>
+      )}
+
+      {studioWarnings.length > 0 && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          {studioWarnings[0]}
         </div>
       )}
 
@@ -405,6 +478,7 @@ export function ProofEditor({ proofId }: ProofEditorProps) {
             addOrderLine={addOrderLine}
             removeOrderLine={removeOrderLine}
           />
+          <ProofPricingCard proof={proof} />
         </div>
       )}
 
@@ -414,6 +488,82 @@ export function ProofEditor({ proofId }: ProofEditorProps) {
         onSelectAsset={handleAssetSelect}
         defaultWorkflow="all"
       />
+      <ProofStudioAssetImporter
+        proofId={proofId}
+        open={studioOpen}
+        token={studioToken}
+        loading={studioLoading}
+        error={studioError}
+        onClose={() => setStudioOpen(false)}
+      />
+    </div>
+  )
+}
+
+function ProofStudioAssetImporter({
+  proofId,
+  open,
+  token,
+  loading,
+  error,
+  onClose,
+}: {
+  proofId: string
+  open: boolean
+  token: string | null
+  loading: boolean
+  error: string | null
+  onClose: () => void
+}) {
+  if (!open) return null
+
+  const designToolUrl = process.env.NEXT_PUBLIC_DESIGN_TOOL_URL || ''
+  const iframeSrc =
+    designToolUrl && token
+      ? `${designToolUrl}/staff-quote/proof/${proofId}/builder?token=${encodeURIComponent(token)}&mode=proof-assets`
+      : ''
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 p-4">
+      <div className="mx-auto flex h-full max-w-7xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+          <div>
+            <h2 className="text-sm font-semibold text-foreground">Import visual assets</h2>
+            <p className="text-xs text-muted-foreground">The design tool will send mockup assets back to this proof.</p>
+          </div>
+          <Button variant="secondary" size="icon" onClick={onClose} aria-label="Close visual asset importer">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {loading && (
+          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+            Loading design tool...
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="m-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && !designToolUrl && (
+          <div className="m-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Set NEXT_PUBLIC_DESIGN_TOOL_URL to import proof assets from the design tool.
+          </div>
+        )}
+
+        {!loading && !error && iframeSrc && (
+          <iframe
+            src={iframeSrc}
+            className="min-h-0 flex-1 border-0"
+            allow="clipboard-write"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+            title="Design tool proof asset importer"
+          />
+        )}
+      </div>
     </div>
   )
 }
@@ -691,6 +841,116 @@ function PrintAreaEditor({
       </div>
     </div>
   )
+}
+
+function ProofPricingCard({ proof }: { proof: ProofDetail }) {
+  const priceableLines = proof.document.orderLines.filter(line => line.productId && calculateLineTotal(line) > 0)
+  const priceableKey = priceableLines
+    .map(line => `${line.id}:${line.productId}:${calculateLineTotal(line)}`)
+    .join('|')
+  const [pricing, setPricing] = useState<Record<string, { unit_price: number; total: number }>>({})
+  const [pricingError, setPricingError] = useState<string | null>(null)
+  const decorationRefs = proof.document.designs.flatMap(design => design.mockupAssets ?? [])
+
+  useEffect(() => {
+    let cancelled = false
+    if (priceableLines.length === 0) {
+      setPricing({})
+      return
+    }
+
+    async function fetchPricing() {
+      setPricingError(null)
+      try {
+        const entries = await Promise.all(
+          priceableLines.map(async line => {
+            const response = await fetch('/api/pricing/quote-line', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                product_id: line.productId,
+                organization_id: proof.organizationId,
+                quantity: calculateLineTotal(line),
+              }),
+            })
+            if (!response.ok) {
+              const payload = await response.json().catch(() => ({}))
+              throw new Error(payload.error || 'Pricing lookup failed')
+            }
+            const payload = await response.json()
+            return [line.id, { unit_price: Number(payload.unit_price ?? 0), total: Number(payload.total ?? 0) }] as const
+          }),
+        )
+        if (!cancelled) setPricing(Object.fromEntries(entries))
+      } catch (error) {
+        if (!cancelled) setPricingError(error instanceof Error ? error.message : 'Pricing lookup failed')
+      }
+    }
+
+    void fetchPricing()
+    return () => { cancelled = true }
+  }, [priceableKey, proof.organizationId])
+
+  const productTotal = Object.values(pricing).reduce((sum, row) => sum + row.total, 0)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Proof pricing</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        {pricingError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-3 text-red-800">
+            {pricingError}
+          </div>
+        )}
+        {priceableLines.length === 0 ? (
+          <p className="text-muted-foreground">
+            Product pricing appears after imported visual assets carry product references onto order lines.
+          </p>
+        ) : (
+          <div className="overflow-hidden rounded-2xl border border-gray-200">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-xs uppercase text-muted-foreground">
+                <tr>
+                  <th className="px-3 py-2">Line</th>
+                  <th className="px-3 py-2">Qty</th>
+                  <th className="px-3 py-2">Unit</th>
+                  <th className="px-3 py-2 text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {priceableLines.map(line => {
+                  const row = pricing[line.id]
+                  return (
+                    <tr key={line.id} className="border-t border-gray-100">
+                      <td className="px-3 py-2">{line.name || line.garment || `Design ${line.designIndex}`}</td>
+                      <td className="px-3 py-2">{calculateLineTotal(line)}</td>
+                      <td className="px-3 py-2">{row ? formatNZD(row.unit_price) : '...'}</td>
+                      <td className="px-3 py-2 text-right">{row ? formatNZD(row.total) : '...'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
+          <span className="text-muted-foreground">
+            Decoration refs: {decorationRefs.length}. Decoration pricing is resolved from staff/catalogue records, not design-tool totals.
+          </span>
+          <span className="font-semibold text-foreground">Product total {formatNZD(productTotal)}</span>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function formatNZD(value: number) {
+  return new Intl.NumberFormat('en-NZ', {
+    style: 'currency',
+    currency: 'NZD',
+  }).format(value)
 }
 
 function OrderLinesCard({
