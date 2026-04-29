@@ -51,3 +51,16 @@
 
 - `app/api/inventory/route.ts` selects `.name` from `product_color_swatches`; column is `.label`.
 - `lib/monday/sync-job-tracker-items.ts` passes a slug ("plant-a-seed-mens") into a UUID column.
+
+## 2026-04-29 — B2B Platform 1.0 MVP execution update
+
+**Proof architecture decision:** the WS1 Phase 1.5 design-tool PDF ownership in the older master plan is stale. The current architecture is:
+
+- `print-room-studio` / design-tool generates mockup images and product-view assets only.
+- `print-room-staff-portal` owns proof assembly, proof editing, proof export, PDF, and browser print flow.
+- Existing WS1 commits that add editor data capture, ProductCustomizer proof binding, artwork upload, and mockup/product-view generation are salvage candidates.
+- Existing WS1 commits that make design-tool render full proof PDFs or own the Allpress-style proof template conflict with the updated architecture and should not be merged as-is.
+
+**WS4 pricing correction:** catalogue prices are absolute catalogue prices. For catalogue-scoped customers such as PRT, customer portal UI shows `Catalogue pricing` and suppresses fake tier-discount/wholesale-discount lines. Tier discount lines remain valid only for non-catalogue tiered customers.
+
+**Current MVP execution state:** WS2, WS3, WS4, WS5, and WSM draft code exist locally with automated checks run where available. This is not recorded as fully shipped yet because live browser smoke against PRT and GitHub pushes are still pending in this shell.
