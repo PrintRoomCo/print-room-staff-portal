@@ -3,6 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { AddStoreDialog } from './AddStoreDialog'
 
 export interface Store {
@@ -67,7 +69,7 @@ export function StoresPanel({
   }
 
   return (
-    <section className="rounded border border-gray-200 p-4">
+    <Card className="p-6">
       <header className="flex items-center justify-between">
         <h2 className="text-sm font-medium text-gray-700">
           Stores ({stores.length})
@@ -78,7 +80,7 @@ export function StoresPanel({
       </header>
 
       {error && (
-        <p className="mt-2 rounded border border-red-200 bg-red-50 px-3 py-1.5 text-sm text-red-700">
+        <p className="mt-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
           {error}
         </p>
       )}
@@ -96,40 +98,43 @@ export function StoresPanel({
                     {oneLineAddress(s) || 'No address on file'}
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
-                  className="text-xs text-blue-600 underline"
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setOpenId(openId === s.id ? null : s.id)}
                 >
                   {openId === s.id ? 'Close' : 'Edit'}
-                </button>
+                </Button>
               </div>
 
               {openId === s.id && (
-                <form
-                  className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    setOpenId(null)
-                  }}
-                >
-                  {EDITABLE_FIELDS.map((field) => (
-                    <label key={field} className="block text-xs text-gray-600">
-                      {field.replace('_', ' ')}
-                      <input
-                        aria-label={`Store ${field}`}
-                        className="mt-0.5 w-full rounded border border-gray-300 px-2 py-1 text-sm"
-                        defaultValue={s[field] ?? ''}
-                        onBlur={(e) => {
-                          const next = e.target.value === '' ? null : e.target.value
-                          if (next !== (s[field] ?? null)) {
-                            patchStore(s.id, { [field]: next } as Partial<Store>)
-                          }
-                        }}
-                      />
-                    </label>
-                  ))}
-                </form>
+                <Card variant="solid" className="mt-3 p-4">
+                  <form
+                    className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                      setOpenId(null)
+                    }}
+                  >
+                    {EDITABLE_FIELDS.map((field) => (
+                      <label key={field} className="block text-xs text-gray-600">
+                        {field.replace('_', ' ')}
+                        <Input
+                          aria-label={`Store ${field}`}
+                          className="mt-1"
+                          defaultValue={s[field] ?? ''}
+                          onBlur={(e) => {
+                            const next = e.target.value === '' ? null : e.target.value
+                            if (next !== (s[field] ?? null)) {
+                              patchStore(s.id, { [field]: next } as Partial<Store>)
+                            }
+                          }}
+                        />
+                      </label>
+                    ))}
+                  </form>
+                </Card>
               )}
             </li>
           ))}
@@ -146,6 +151,6 @@ export function StoresPanel({
           }}
         />
       )}
-    </section>
+    </Card>
   )
 }
