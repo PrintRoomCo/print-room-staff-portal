@@ -33,6 +33,9 @@ import {
   Boxes,
   ShoppingCart,
   FileCheck,
+  Palette,
+  LayoutGrid,
+  Calculator,
 } from 'lucide-react'
 
 interface NavItem {
@@ -81,6 +84,16 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Quote Dashboard', href: '/quote-tool', icon: FileText },
       { label: 'New Quote', href: '/quote-tool/new', icon: FilePlus },
       { label: 'Saved Quotes', href: '/quote-tool/quotes', icon: List },
+    ],
+  },
+  {
+    id: 'designer',
+    label: 'Designer',
+    icon: Palette,
+    permission: 'designer',
+    items: [
+      { label: 'Catalog', href: '/designer/catalog', icon: LayoutGrid },
+      { label: 'Pricing test', href: '/designer/dev/pricing-test', icon: Calculator },
     ],
   },
   {

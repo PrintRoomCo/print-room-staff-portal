@@ -19,6 +19,8 @@ export type StaffPermission =
   | 'orders:write'
   | 'b2b_accounts'
   | 'b2b_accounts:write'
+  | 'designer'
+  | 'designer:write'
 
 export interface StaffUser {
   id: string

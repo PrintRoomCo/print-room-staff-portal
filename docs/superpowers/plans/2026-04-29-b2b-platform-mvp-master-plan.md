@@ -14,7 +14,7 @@
 
 | # | Workstream | Spec | Estimate | Repos touched |
 |---|---|---|---|---|
-| WS1 | Proofs fix to "actually works" | `2026-04-29-proofs-phase-1-5-fix-design.md` | 5-7 days | `print-room-studio/apps/design-tool` |
+| ~~WS1~~ ⚠ SUPERSEDED 2026-04-30 | ~~Proofs fix to "actually works"~~ — design-tool proof builder + iframe wiring deleted; re-architecture pending context-mapping. See `~/.claude/projects/c--Users-MSI-Documents-Projects/memory/project_proof_iframe_consolidation.md` | — | — | — |
 | WS2 | Staff-portal polish — consistency to UI primitives | (mechanical, see §WS2 below) | 2-3 days | `print-room-staff-portal` |
 | WS3 | Customer-portal premium polish | `2026-04-29-customer-portal-premium-polish-design.md` | 3-4 days | `print-room-portal` |
 | WS4 | Customer-visible pricing breakdown | `2026-04-29-customer-pricing-visibility-design.md` | 1.5-2 days | `print-room-portal` (+ minor staff-portal) |

@@ -1,5 +1,7 @@
 # Design Proofs — Phase 1 (D3-α) Implementation Plan
 
+> **⚠ SUPERSEDED 2026-04-30 — DO NOT IMPLEMENT.** This plan was built on the assumption that `print-room-studio/apps/design-tool` would own a `staff-quote/proof/*` route group with iframe wiring back to the staff portal. That entire architecture was deleted on 2026-04-29 (design-tool side) and 2026-04-29 (staff-portal side). The proof builder, proof iframe modal, JWT token routes, and quote-tool iframe embed are all gone. Re-architecture is pending a context-mapping exercise on the design tool. See `~/.claude/projects/c--Users-MSI-Documents-Projects/memory/project_proof_iframe_consolidation.md` for the current baseline.
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Internal-only proof builder where staff create a proof, fill in designs against existing products, generate the proof PDF, and have the PDF stored in Supabase. No customer interaction, no catalogue linkage, no versioning beyond v1 — those land in Phases 2-4.

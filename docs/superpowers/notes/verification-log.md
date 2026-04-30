@@ -54,7 +54,7 @@
 
 ## 2026-04-29 — B2B Platform 1.0 MVP execution update
 
-**Proof architecture decision:** the WS1 Phase 1.5 design-tool PDF ownership in the older master plan is stale. The current architecture is:
+**Proof architecture decision:** ⚠ SUPERSEDED 2026-04-30. The architecture below was itself superseded the next day by a full decouple: the staff portal ↔ design-tool iframe wiring (proof builder, proof iframe modal, JWT token routes, quote-tool iframe embed) was deleted on 2026-04-29 (design-tool side) and 2026-04-30 (staff-portal side). Re-architecture is pending a context-mapping exercise on the design tool. See `~/.claude/projects/c--Users-MSI-Documents-Projects/memory/project_proof_iframe_consolidation.md`. The bullets below are kept for historical context only — do not implement from them.
 
 - `print-room-studio` / design-tool generates mockup images and product-view assets only.
 - `print-room-staff-portal` owns proof assembly, proof editing, proof export, PDF, and browser print flow.

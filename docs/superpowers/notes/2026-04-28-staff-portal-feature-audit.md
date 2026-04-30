@@ -96,10 +96,11 @@ Ranked by likely daily blast radius based on memory + code signal. Browser smoke
 - **Fix complexity:** M (Send-to-Customer = email + status update; Duplicate = quote-clone endpoint)
 - **Daily-blocking:** Maybe (ask Jamie)
 
-### 12. ✅ Quote Tool — Design Tool — `/quote-tool/design-tool`
-- **File:** `src/app/(portal)/quote-tool/design-tool/page.tsx`
-- **Status:** ✅ Works (iframe to `print-room-studio` design-tool with JWT)
-- **Evidence:** Same pattern as `/proofs`. Token endpoint at `/api/quote-tool/token`.
+### 12. ⚠ SUPERSEDED 2026-04-30 — Quote Tool — Design Tool — `/quote-tool/design-tool`
+
+- **File:** ~~`src/app/(portal)/quote-tool/design-tool/page.tsx`~~ (deleted 2026-04-30)
+- **Status:** REMOVED. Route, page, embed component, and `/api/quote-tool/token` endpoint all deleted as part of the staff-portal ↔ design-tool decoupling. Sidebar entry also removed.
+- **See:** `~/.claude/projects/c--Users-MSI-Documents-Projects/memory/project_proof_iframe_consolidation.md`
 
 ### 13. ✅ Orders — All Orders — `/orders`
 - **File:** `src/app/(portal)/orders/page.tsx`
